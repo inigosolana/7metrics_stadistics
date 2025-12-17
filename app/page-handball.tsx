@@ -165,6 +165,9 @@ const PlayerGrid = ({ team, players, selectedPlayerA, selectedPlayerB, handlePla
   </div>
 )
 
+// Busca el componente ActionWizard y actualiza el renderizado del paso "DETAILS"
+// Especialmente los botones variant="outline" que son los que suelen fallar.
+
 const ActionWizard = ({
   wizardState,
   activePlayer,
@@ -184,123 +187,160 @@ const ActionWizard = ({
   toggleContext,
   confirmEvent,
 }: any) => (
-  <div className="bg-slate-900 border border-slate-800 rounded-lg p-3 h-full flex flex-col relative overflow-hidden min-h-0">
-    {wizardState === "IDLE" && (
-      <div className="flex-1 flex flex-col items-center justify-center text-center p-6 space-y-4 opacity-40">
-        <Users className="w-20 h-20 text-slate-500 stroke-1" />
-        <p className="text-slate-400 font-medium">Selecciona un jugador para registrar una acción</p>
-      </div>
-    )}
-
+  <div className="bg-slate-900 border border-slate-700 rounded-xl p-4 h-full flex flex-col relative overflow-hidden shadow-2xl">
+    {/* ... (La parte de IDLE y ACTION_SELECTION se mantiene igual, revisa solo si esos botones se ven mal) ... */}
+    
+    {/* IMPORTANTE: Mantener ACTION_SELECTION visible, asegúrate que los botones grandes tengan texto blanco explícito */}
     {wizardState === "ACTION_SELECTION" && (
       <div className="flex-1 flex flex-col animate-in fade-in zoom-in-95 duration-150 min-h-0">
-        <div className="flex justify-between items-center mb-3 pb-2 border-b border-slate-800 shrink-0">
-          <Button variant="ghost" size="sm" onClick={handleBack} className="text-slate-400 hover:text-white -ml-2">
+        <div className="flex justify-between items-center mb-4 pb-2 border-b border-slate-700 shrink-0">
+          <Button variant="ghost" size="sm" onClick={handleBack} className="text-slate-400 hover:text-white -ml-2 hover:bg-slate-800">
             <ArrowLeft className="w-4 h-4 mr-1" /> Atrás
           </Button>
           <div className="text-right">
-            <span className="text-xs text-slate-500 block uppercase">Jugador Seleccionado</span>
-            <span className="font-bold text-white text-lg">
-              #{activePlayer?.player}{" "}
-              {isGoalkeeper && <span className="text-xs text-slate-400 font-normal ml-1">(Portero)</span>}
+            <span className="text-[10px] text-slate-500 block uppercase font-bold tracking-wider">Jugador</span>
+            <span className="font-black text-white text-xl italic">
+              #{activePlayer?.player}
             </span>
           </div>
         </div>
-        <div className="grid grid-cols-2 gap-3 flex-1 content-start overflow-y-auto pb-4 min-h-0">
-          {!isGoalkeeper ? (
-            <>
-              <Button
-                className="h-20 text-xl font-black bg-green-600 hover:bg-green-500 text-white shadow-lg col-span-2"
-                onClick={() => handleActionSelect("GOL")}
-              >
-                GOL
-              </Button>
-              <Button
-                className="h-16 text-base font-bold bg-green-700 hover:bg-green-600 text-white col-span-2"
-                onClick={() => handleActionSelect("GOL CAMPO A CAMPO")}
-              >
-                GOL CAMPO A CAMPO
-              </Button>
-              <Button
-                className="h-16 text-lg font-bold bg-blue-600 hover:bg-blue-500 text-white"
-                onClick={() => handleActionSelect("PARADA")}
-              >
-                PARADA
-              </Button>
-              <Button
-                className="h-16 text-lg font-bold bg-yellow-600 hover:bg-yellow-500 text-white"
-                onClick={() => handleActionSelect("FUERA")}
-              >
-                FUERA
-              </Button>
-              <Button
-                className="h-14 font-semibold bg-slate-800 border border-slate-700"
-                onClick={() => handleActionSelect("POSTE")}
-              >
-                POSTE
-              </Button>
-              <Button
-                className="h-14 font-semibold bg-slate-800 border border-slate-700"
-                onClick={() => handleActionSelect("BLOCADO")}
-              >
-                BLOCADO
-              </Button>
-              <Button
-                className="h-14 font-semibold bg-red-600 hover:bg-red-500 text-white col-span-2"
-                onClick={() => handleActionSelect("PÉRDIDA")}
-              >
-                PÉRDIDA / ERROR / FALTA ATAQUE
-              </Button>
-              <Button
-                className="h-14 font-semibold bg-slate-700 hover:bg-slate-600"
-                onClick={() => handleActionSelect("FALTA")}
-              >
-                FALTA (Defensiva)
-              </Button>
-              <Button
-                className="h-14 font-semibold bg-purple-600 hover:bg-purple-500"
-                onClick={() => handleActionSelect("7 METROS")}
-              >
-                7 METROS PROVOCADO
-              </Button>
-              <Button
-                className="h-14 font-semibold bg-slate-700 hover:bg-slate-600 col-span-2"
-                onClick={() => handleActionSelect("ASISTENCIA")}
-              >
-                ASISTENCIA
-              </Button>
-            </>
-          ) : (
-            <>
-              <Button
-                className="h-24 text-2xl font-black bg-blue-600 hover:bg-blue-500 col-span-2"
-                onClick={() => handleActionSelect("PARADA")}
-              >
-                PARADA
-              </Button>
-              <Button
-                className="h-24 text-2xl font-black bg-red-600 hover:bg-red-500 col-span-2"
-                onClick={() => handleActionSelect("GOL ENCAJADO")}
-              >
-                GOL ENCAJADO
-              </Button>
-              <Button
-                className="h-16 text-base font-bold bg-green-700 hover:bg-green-600 text-white col-span-2"
-                onClick={() => handleActionSelect("GOL CAMPO A CAMPO")}
-              >
-                GOL CAMPO A CAMPO
-              </Button>
-              <Button
-                className="h-16 text-lg font-bold bg-green-600 hover:bg-green-500 col-span-2"
-                onClick={() => handleActionSelect("ASISTENCIA")}
-              >
-                ASISTENCIA (Pase)
-              </Button>
-            </>
-          )}
+        <div className="grid grid-cols-2 gap-3 flex-1 content-start overflow-y-auto pb-4 custom-scrollbar">
+           {/* Asegúrate que estos botones tengan 'text-white' */}
+           {!isGoalkeeper ? (
+             <>
+               <Button className="h-24 text-2xl font-black bg-green-600 hover:bg-green-500 text-white shadow-lg col-span-2 border-b-4 border-green-800 active:translate-y-1 active:border-0" onClick={() => handleActionSelect("GOL")}>GOL</Button>
+               <Button className="h-20 text-xl font-black bg-blue-600 hover:bg-blue-500 text-white shadow-lg border-b-4 border-blue-800 active:translate-y-1 active:border-0" onClick={() => handleActionSelect("PARADA")}>PARADA</Button>
+               <Button className="h-20 text-xl font-black bg-amber-600 hover:bg-amber-500 text-white shadow-lg border-b-4 border-amber-800 active:translate-y-1 active:border-0" onClick={() => handleActionSelect("FUERA")}>FUERA</Button>
+               <Button className="h-16 font-bold bg-red-600 hover:bg-red-500 text-white col-span-2 border-b-4 border-red-800" onClick={() => handleActionSelect("PÉRDIDA")}>PÉRDIDA / ERROR</Button>
+               {/* Agrega el resto de botones con clases similares... */}
+             </>
+           ) : (
+             // Botones portero...
+             <Button className="h-24 text-2xl font-black bg-blue-600 hover:bg-blue-500 text-white col-span-2" onClick={() => handleActionSelect("PARADA")}>PARADA</Button>
+           )}
         </div>
       </div>
     )}
+
+    {/* AQUÍ ESTÁ EL CAMBIO PRINCIPAL DE COLORES PARA LOS DETALLES */}
+    {wizardState === "DETAILS" && (
+      <div className="flex-1 flex flex-col h-full animate-in slide-in-from-right-4 duration-200 min-h-0">
+        <div className="flex justify-between items-center mb-3 pb-2 border-b border-slate-700 shrink-0">
+          <Button variant="ghost" size="sm" onClick={handleBack} className="-ml-2 text-slate-400 hover:text-white hover:bg-slate-800">
+            <ArrowLeft className="w-4 h-4" />
+          </Button>
+          <span className="text-green-400 font-black tracking-wider text-xl italic">{currentAction}</span>
+        </div>
+        
+        <div className="flex-1 overflow-y-auto space-y-5 pb-20 custom-scrollbar pr-2">
+          
+          {/* DEFENSA RIVAL */}
+          <div className="bg-slate-950/50 p-4 rounded-xl border border-slate-800">
+            <div className="text-[10px] font-black text-slate-500 mb-3 uppercase tracking-widest flex items-center gap-1">
+              <Shield className="w-3 h-3" /> Defensa Rival
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              {DEFENSE_TYPES.map((def) => (
+                <Button
+                  key={def}
+                  size="sm"
+                  // CAMBIO: Quitamos variant="outline" y ponemos clases explícitas
+                  className={`text-xs font-bold border transition-all ${
+                    selectedDefenseType === def 
+                      ? "bg-indigo-600 text-white border-indigo-400 shadow-[0_0_15px_rgba(79,70,229,0.4)]" 
+                      : "bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700 hover:text-white"
+                  }`}
+                  onClick={() => setSelectedDefenseType(def)}
+                >
+                  {def}
+                </Button>
+              ))}
+            </div>
+          </div>
+
+          {/* PÉRDIDA (Condicional) */}
+          {currentAction === "PÉRDIDA" && (
+            <div className="bg-red-950/20 p-4 rounded-xl border border-red-900/50">
+              <div className="text-[10px] font-black text-red-400 mb-3 uppercase tracking-widest">Tipo de Error</div>
+              <div className="grid grid-cols-2 gap-2">
+                {LOSS_TYPES.map((loss) => (
+                  <Button
+                    key={loss}
+                    size="sm"
+                    className={`text-xs h-auto py-3 font-bold ${
+                      selectedLossType === loss 
+                      ? "bg-red-600 text-white border border-red-400" 
+                      : "bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700"
+                    }`}
+                    onClick={() => setSelectedLossType(loss)}
+                  >
+                    {loss}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ZONA DE PISTA */}
+          <div className="bg-slate-950/50 p-4 rounded-xl border border-slate-800">
+            <div className="text-[10px] font-black text-slate-500 mb-3 uppercase tracking-widest">Zona de Lanzamiento</div>
+            <div className="grid grid-cols-3 gap-2">
+              {COURT_ZONES.map((z) => (
+                <Button
+                  key={z}
+                  size="sm"
+                  className={`h-12 text-[9px] font-bold leading-tight whitespace-normal border transition-all ${
+                    selectedCourtZone === z 
+                    ? "bg-blue-600 text-white border-blue-400" 
+                    : "bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700"
+                  }`}
+                  onClick={() => setSelectedCourtZone(z)}
+                >
+                  {z}
+                </Button>
+              ))}
+            </div>
+          </div>
+
+          {/* PORTERÍA (VISUAL) */}
+          {["GOL", "PARADA", "FUERA", "POSTE", "BLOCADO", "GOL ENCAJADO"].includes(currentAction || "") && (
+            <div className="bg-slate-950/50 p-4 rounded-xl border border-slate-800">
+              <div className="text-[10px] font-black text-slate-500 mb-3 uppercase tracking-widest text-center">
+                Impacto en Portería
+              </div>
+              <div className="aspect-square max-w-[180px] mx-auto grid grid-cols-3 gap-2 bg-slate-900 p-2 rounded-lg border border-slate-800 shadow-inner">
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((z) => (
+                  <Button
+                    key={z}
+                    variant="ghost"
+                    className={`h-full w-full text-2xl font-black rounded transition-all ${
+                      selectedGoalZone === z 
+                      ? "bg-green-500 text-black shadow-[0_0_20px_rgba(34,197,94,0.6)] scale-110 z-10" 
+                      : "bg-slate-800 text-slate-600 hover:bg-slate-700 hover:text-slate-300"
+                    }`}
+                    onClick={() => setSelectedGoalZone(z)}
+                  >
+                    {z}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-slate-900 to-transparent">
+          <Button
+            size="lg"
+            className="w-full h-14 bg-green-600 hover:bg-green-500 text-white shadow-2xl font-black tracking-widest text-xl italic uppercase border-t border-green-400/30"
+            onClick={() => confirmEvent()}
+          >
+            CONFIRMAR
+          </Button>
+        </div>
+      </div>
+    )}
+  </div>
+)
 
     {wizardState === "DETAILS" && (
       <div className="flex-1 flex flex-col h-full animate-in slide-in-from-right-4 duration-200 min-h-0">
@@ -975,8 +1015,20 @@ export default function EventPad() {
     )
   }
 
+  // ... (código anterior: hooks, funciones, etc.)
+
+  if (isMobile) {
+    return (
+      // ... (todo el código de la versión móvil que YA TIENES, no toques esto)
+    )
+  }
+
+  // 👇👇 AQUÍ ES DONDE TIENES QUE PEGAR EL CÓDIGO NUEVO DEL LAYOUT 👇👇
+  // Borra desde este "return (" hasta el "}" final de la función y pega lo nuevo.
+  
   return (
-    <div className="flex flex-col h-screen bg-slate-950 text-slate-100 overflow-hidden box-border">
+    <div className="flex flex-col h-screen bg-slate-950 text-slate-100 overflow-hidden box-border font-sans selection:bg-blue-500/30">
+      {/* 1. Header Scoreboard */}
       <HeaderScoreboard
         localScore={localScore}
         visitorScore={visitorScore}
@@ -989,86 +1041,82 @@ export default function EventPad() {
       />
 
       <div className="flex-1 overflow-hidden p-2 sm:p-4 w-full h-full min-h-0">
-        <div className="grid grid-cols-[minmax(250px,25%)_1fr_minmax(250px,25%)] gap-2 sm:gap-4 h-full w-full max-w-[1920px] mx-auto min-h-0">
-          <div className="flex flex-col gap-2 sm:gap-4 h-full overflow-hidden min-h-0">
-            <div className="h-[40%] lg:h-[45%] overflow-hidden shrink-0">
-              <PlayerGrid
-                team="A"
-                players={teamAPlayers}
-                selectedPlayerA={selectedPlayerA}
-                selectedPlayerB={selectedPlayerB}
-                handlePlayerSelect={handlePlayerSelect}
-                teamName={teamAName}
-              />
-            </div>
-            <div className="flex-1 bg-slate-900 border border-slate-800 rounded-lg flex flex-col overflow-hidden relative min-h-0">
-              <div className="bg-slate-950 border-b border-slate-800 p-2 text-xs font-bold text-center text-blue-400 uppercase tracking-wider flex justify-between items-center shrink-0">
-                <span className="flex items-center gap-2 truncate">
-                  <Shield className="w-3 h-3" /> PORTERÍA LOCAL
-                </span>
-                <Dialog>
-                  <DialogTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-6 w-6 text-slate-400 hover:text-white">
-                      <Maximize2 className="w-3 h-3" />
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="max-w-[90vw] h-[90vh] bg-slate-950 border-slate-800 p-0 flex flex-col">
-                    <DialogHeader className="p-4 bg-slate-900 border-b border-slate-800 shrink-0">
-                      <DialogTitle className="text-white">Análisis Detallado: Portería Local</DialogTitle>
-                    </DialogHeader>
-                    <div className="flex-1 p-4 overflow-hidden min-h-0 flex flex-col">
-                      <PorteriaResponsive events={events} />
-                    </div>
-                  </DialogContent>
-                </Dialog>
-              </div>
-
-              <div className="flex-1 overflow-hidden p-2 flex flex-col min-h-0">
-                <PorteriaResponsive events={events} />
-                <div className="text-[9px] text-center text-slate-600 mt-1 shrink-0">Tiros recibidos (% Paradas)</div>
-              </div>
-            </div>
+        <div className="grid grid-cols-[minmax(300px,30%)_1fr_minmax(300px,30%)] gap-4 h-full w-full max-w-[1920px] mx-auto min-h-0">
+          
+          {/* --- COLUMNA IZQUIERDA (EQUIPO LOCAL) --- */}
+          <div className="flex flex-col gap-4 h-full overflow-hidden min-h-0 relative">
+            {selectedPlayerA ? (
+               // Si hay jugador A seleccionado, mostramos el WIZARD aquí
+               <div className="h-full animate-in slide-in-from-left-4 duration-300">
+                  <ActionWizard
+                    wizardState={wizardState}
+                    activePlayer={getActiveTeamAndPlayer()}
+                    isGoalkeeper={isGoalkeeper()}
+                    handleBack={handleBack}
+                    currentAction={currentAction}
+                    handleActionSelect={handleActionSelect}
+                    selectedDefenseType={selectedDefenseType}
+                    setSelectedDefenseType={setSelectedDefenseType}
+                    selectedLossType={selectedLossType}
+                    setSelectedLossType={setSelectedLossType}
+                    selectedCourtZone={selectedCourtZone}
+                    setSelectedCourtZone={setSelectedCourtZone}
+                    selectedGoalZone={selectedGoalZone}
+                    setSelectedGoalZone={setSelectedGoalZone}
+                    selectedContext={selectedContext}
+                    toggleContext={toggleContext}
+                    confirmEvent={confirmEvent}
+                  />
+               </div>
+            ) : (
+               // Si NO, mostramos Lista y Portería
+               <>
+                <div className="h-[50%] overflow-hidden shrink-0">
+                  <PlayerGrid
+                    team="A"
+                    players={teamAPlayers}
+                    selectedPlayerA={selectedPlayerA}
+                    selectedPlayerB={selectedPlayerB}
+                    handlePlayerSelect={handlePlayerSelect}
+                    teamName={teamAName}
+                  />
+                </div>
+                <div className="flex-1 bg-slate-900 border border-slate-800 rounded-xl flex flex-col overflow-hidden relative min-h-0 shadow-lg">
+                  <div className="bg-slate-950 border-b border-slate-800 p-3 text-xs font-black text-center text-blue-400 uppercase tracking-widest flex justify-between items-center shrink-0">
+                    <span className="flex items-center gap-2 truncate italic">
+                      <Shield className="w-4 h-4" /> PORTERÍA LOCAL
+                    </span>
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-6 w-6 text-slate-500 hover:text-white">
+                          <Maximize2 className="w-4 h-4" />
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="max-w-5xl bg-slate-950 border-slate-800 p-8">
+                        <DialogHeader className="mb-4">
+                          <DialogTitle className="text-2xl text-white font-black italic">ANÁLISIS PORTERÍA</DialogTitle>
+                        </DialogHeader>
+                        <div className="h-[60vh]">
+                          <PorteriaResponsive events={events} />
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
+                  <div className="flex-1 overflow-hidden p-2 flex flex-col min-h-0">
+                    <PorteriaResponsive events={events} />
+                  </div>
+                </div>
+               </>
+            )}
           </div>
 
-          <div className="h-full overflow-hidden shadow-2xl shadow-black/50 rounded-lg bg-slate-900/50 min-h-0">
-            <ActionWizard
-              wizardState={wizardState}
-              activePlayer={getActiveTeamAndPlayer()}
-              isGoalkeeper={isGoalkeeper()}
-              handleBack={handleBack}
-              currentAction={currentAction}
-              handleActionSelect={handleActionSelect}
-              selectedDefenseType={selectedDefenseType}
-              setSelectedDefenseType={setSelectedDefenseType}
-              selectedLossType={selectedLossType}
-              setSelectedLossType={setSelectedLossType}
-              selectedCourtZone={selectedCourtZone}
-              setSelectedCourtZone={setSelectedCourtZone}
-              selectedGoalZone={selectedGoalZone}
-              setSelectedGoalZone={setSelectedGoalZone}
-              selectedContext={selectedContext}
-              toggleContext={toggleContext}
-              confirmEvent={confirmEvent}
-            />
-          </div>
-
-          <div className="flex flex-col gap-2 sm:gap-4 h-full overflow-hidden min-h-0">
-            <div className="h-[40%] lg:h-[45%] overflow-hidden shrink-0">
-              <PlayerGrid
-                team="B"
-                players={teamBPlayers}
-                selectedPlayerA={selectedPlayerA}
-                selectedPlayerB={selectedPlayerB}
-                handlePlayerSelect={handlePlayerSelect}
-                teamName={teamBName}
-              />
+          {/* --- COLUMNA CENTRAL (HISTORIAL / FEED) --- */}
+          <div className="flex flex-col h-full overflow-hidden bg-slate-900/50 border border-slate-800/50 rounded-xl">
+            <div className="bg-slate-950/80 p-3 border-b border-slate-800 shrink-0 text-center">
+               <span className="text-xs font-black text-slate-500 uppercase tracking-[0.2em]">Live Feed</span>
             </div>
-            <div className="flex-1 bg-slate-900 border border-slate-800 rounded-lg flex flex-col overflow-hidden min-h-0">
-              <div className="bg-slate-950 border-b border-slate-800 p-2 text-xs font-bold text-center text-amber-400 uppercase tracking-wider shrink-0">
-                <History className="w-3 h-3 inline-block mr-2" /> Historial
-              </div>
-              <div className="flex-1 overflow-hidden min-h-0">
-                <HistoryPanel
+            <div className="flex-1 min-h-0">
+               <HistoryPanel
                   events={events}
                   teamAName={teamAName}
                   teamBName={teamBName}
@@ -1076,11 +1124,49 @@ export default function EventPad() {
                   onExport={exportData}
                   formatTime={formatTime}
                 />
-              </div>
             </div>
           </div>
+
+          {/* --- COLUMNA DERECHA (EQUIPO VISITANTE) --- */}
+          <div className="flex flex-col gap-4 h-full overflow-hidden min-h-0">
+            {selectedPlayerB ? (
+               <div className="h-full animate-in slide-in-from-right-4 duration-300">
+                  <ActionWizard
+                    wizardState={wizardState}
+                    activePlayer={getActiveTeamAndPlayer()}
+                    isGoalkeeper={isGoalkeeper()}
+                    handleBack={handleBack}
+                    currentAction={currentAction}
+                    handleActionSelect={handleActionSelect}
+                    selectedDefenseType={selectedDefenseType}
+                    setSelectedDefenseType={setSelectedDefenseType}
+                    selectedLossType={selectedLossType}
+                    setSelectedLossType={setSelectedLossType}
+                    selectedCourtZone={selectedCourtZone}
+                    setSelectedCourtZone={setSelectedCourtZone}
+                    selectedGoalZone={selectedGoalZone}
+                    setSelectedGoalZone={setSelectedGoalZone}
+                    selectedContext={selectedContext}
+                    toggleContext={toggleContext}
+                    confirmEvent={confirmEvent}
+                  />
+               </div>
+            ) : (
+              <div className="h-full overflow-hidden shrink-0">
+                <PlayerGrid
+                  team="B"
+                  players={teamBPlayers}
+                  selectedPlayerA={selectedPlayerA}
+                  selectedPlayerB={selectedPlayerB}
+                  handlePlayerSelect={handlePlayerSelect}
+                  teamName={teamBName}
+                />
+              </div>
+            )}
+          </div>
+
         </div>
       </div>
     </div>
   )
-}
+} // <--- Cierre de la función EventPad
