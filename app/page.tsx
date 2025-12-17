@@ -2,25 +2,12 @@
 
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Dialog, DialogContent, DialogTrigger, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { useIsMobile } from "@/hooks/use-mobile"
-import {
-  Pause,
-  Play,
-  ArrowLeft,
-  Users,
-  Activity,
-  History,
-  Trophy,
-  Settings,
-  Edit3,
-  Target,
-  Shield,
-  AlertCircle,
-  Maximize2,
-} from "lucide-react"
-import { HistoryPanel } from "@/components/history-panel"
+import { Pause, Play, ArrowLeft, Users, Trophy, Settings, Edit3, Shield, AlertCircle } from "lucide-react"
+import { PlayerNumbersPanel } from "@/components/player-numbers-panel"
+import { ActionsPanel } from "@/components/actions-panel"
+import { CourtVisualization } from "@/components/court-visualization"
+import { OpponentGoalStats } from "@/components/opponent-goal-stats"
 
 // --- TIPOS DE DATOS ---
 
@@ -534,7 +521,7 @@ const PorteriaResponsive = ({ events }: { events: Event[] }) => {
 
 // --- COMPONENTE PRINCIPAL ---
 
-export default function EventPad() {
+export default function EventPadPage() {
   const [appState, setAppState] = useState<AppState>("SETUP")
 
   const [teamAName, setTeamAName] = useState("Equipo Local")
@@ -568,7 +555,6 @@ export default function EventPad() {
   const [selectedDefenseType, setSelectedDefenseType] = useState<string | null>(null)
 
   const isMobile = useIsMobile()
-  const [activeTab, setActiveTab] = useState("action")
 
   useEffect(() => {
     let interval: NodeJS.Timeout
@@ -637,7 +623,6 @@ export default function EventPad() {
     }
     setWizardState("ACTION_SELECTION")
     resetWizardData()
-    if (isMobile) setActiveTab("action")
   }
 
   const resetWizardData = () => {
@@ -870,214 +855,93 @@ export default function EventPad() {
     )
   }
 
-  if (isMobile) {
-    return (
-      <div className="h-[100dvh] w-full bg-slate-950 text-slate-100 flex flex-col overflow-hidden">
-        <HeaderScoreboard
-          localScore={localScore}
-          visitorScore={visitorScore}
-          teamAName={teamAName}
-          teamBName={teamBName}
-          time={time}
-          isRunning={isRunning}
-          setIsRunning={setIsRunning}
-          formatTime={formatTime}
-        />
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden min-h-0">
-          <div className="flex-1 overflow-y-auto bg-slate-900 relative min-h-0">
-            <TabsContent value="players" className="h-full m-0 p-2 space-y-2">
-              <div className="grid grid-rows-2 gap-2 h-full">
-                <PlayerGrid
-                  team="A"
-                  players={teamAPlayers}
-                  selectedPlayerA={selectedPlayerA}
-                  selectedPlayerB={selectedPlayerB}
-                  handlePlayerSelect={handlePlayerSelect}
-                  teamName={teamAName}
-                />
-                <PlayerGrid
-                  team="B"
-                  players={teamBPlayers}
-                  selectedPlayerA={selectedPlayerA}
-                  selectedPlayerB={selectedPlayerB}
-                  handlePlayerSelect={handlePlayerSelect}
-                  teamName={teamBName}
-                />
-              </div>
-            </TabsContent>
-            <TabsContent value="action" className="h-full m-0 p-2">
-              <ActionWizard
-                wizardState={wizardState}
-                activePlayer={getActiveTeamAndPlayer()}
-                isGoalkeeper={isGoalkeeper()}
-                handleBack={handleBack}
-                currentAction={currentAction}
-                handleActionSelect={handleActionSelect}
-                selectedDefenseType={selectedDefenseType}
-                setSelectedDefenseType={setSelectedDefenseType}
-                selectedLossType={selectedLossType}
-                setSelectedLossType={setSelectedLossType}
-                selectedCourtZone={selectedCourtZone}
-                setSelectedCourtZone={setSelectedCourtZone}
-                selectedGoalZone={selectedGoalZone}
-                setSelectedGoalZone={setSelectedGoalZone}
-                selectedContext={selectedContext}
-                toggleContext={toggleContext}
-                confirmEvent={confirmEvent}
-              />
-            </TabsContent>
-            <TabsContent value="history" className="h-full m-0 p-2">
-              <HistoryPanel
-                events={events}
-                teamAName={teamAName}
-                teamBName={teamBName}
-                onUndo={handleUndo}
-                onExport={exportData}
-                formatTime={formatTime}
-              />
-            </TabsContent>
-            <TabsContent value="stats" className="h-full m-0 p-2 flex flex-col">
-              <PorteriaResponsive events={events} />
-            </TabsContent>
-          </div>
-          <TabsList className="shrink-0 h-16 bg-slate-900 border-t border-slate-800 grid grid-cols-4 rounded-none p-0 z-20">
-            <TabsTrigger
-              value="players"
-              className="flex flex-col gap-1 h-full rounded-none data-[state=active]:bg-slate-800 border-r border-slate-800/50"
-            >
-              <Users className="w-5 h-5" />
-              <span className="text-[10px]">Equipos</span>
-            </TabsTrigger>
-            <TabsTrigger
-              value="action"
-              className="flex flex-col gap-1 h-full rounded-none data-[state=active]:bg-slate-800 border-r border-slate-800/50"
-            >
-              <Activity className="w-5 h-5" />
-              <span className="text-[10px]">Acción</span>
-            </TabsTrigger>
-            <TabsTrigger
-              value="history"
-              className="flex flex-col gap-1 h-full rounded-none data-[state=active]:bg-slate-800 border-r border-slate-800/50"
-            >
-              <History className="w-5 h-5" />
-              <span className="text-[10px]">Datos</span>
-            </TabsTrigger>
-            <TabsTrigger
-              value="stats"
-              className="flex flex-col gap-1 h-full rounded-none data-[state=active]:bg-slate-800"
-            >
-              <Target className="w-5 h-5" />
-              <span className="text-[10px]">Rival</span>
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
-      </div>
-    )
-  }
-
   return (
-    <div className="flex flex-col h-screen bg-slate-950 text-slate-100 overflow-hidden box-border">
-      <HeaderScoreboard
-        localScore={localScore}
-        visitorScore={visitorScore}
-        teamAName={teamAName}
-        teamBName={teamBName}
-        time={time}
-        isRunning={isRunning}
-        setIsRunning={setIsRunning}
-        formatTime={formatTime}
-      />
-
-      <div className="flex-1 overflow-hidden p-2 sm:p-4 w-full h-full min-h-0">
-        <div className="grid grid-cols-[minmax(250px,25%)_1fr_minmax(250px,25%)] gap-2 sm:gap-4 h-full w-full max-w-[1920px] mx-auto min-h-0">
-          <div className="flex flex-col gap-2 sm:gap-4 h-full overflow-hidden min-h-0">
-            <div className="h-[40%] lg:h-[45%] overflow-hidden shrink-0">
-              <PlayerGrid
-                team="A"
-                players={teamAPlayers}
-                selectedPlayerA={selectedPlayerA}
-                selectedPlayerB={selectedPlayerB}
-                handlePlayerSelect={handlePlayerSelect}
-                teamName={teamAName}
-              />
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex flex-col">
+      {/* Header */}
+      <header className="bg-gradient-to-r from-blue-600 to-blue-700 px-4 py-4 shadow-xl">
+        <div className="flex justify-between items-center">
+          <div className="text-white">
+            <h1 className="text-2xl font-bold">EventPad</h1>
+            <p className="text-blue-100 text-sm">Captura de Datos de Balonmano</p>
+          </div>
+          <div className="text-right text-white">
+            <div className="text-sm text-blue-100">Partido en Vivo</div>
+            <div className="text-3xl font-bold font-mono">
+              {localScore} - {visitorScore}
             </div>
-            <div className="flex-1 bg-slate-900 border border-slate-800 rounded-lg flex flex-col overflow-hidden relative min-h-0">
-              <div className="bg-slate-950 border-b border-slate-800 p-2 text-xs font-bold text-center text-blue-400 uppercase tracking-wider flex justify-between items-center shrink-0">
-                <span className="flex items-center gap-2 truncate">
-                  <Shield className="w-3 h-3" /> PORTERÍA LOCAL
+          </div>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col gap-4 p-4 overflow-hidden">
+        {/* Cronómetro y Control Central */}
+        <div className="bg-slate-800 rounded-xl p-6 shadow-xl text-center">
+          <div className="text-sm text-slate-400 mb-2">CRONÓMETRO</div>
+          <div className="text-6xl font-mono font-bold text-green-400 mb-4">{formatTime(time)}</div>
+          <div className="flex gap-3 justify-center">
+            {/* Controles de tiempo */}
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setIsRunning(!isRunning)}
+              className={`mt-1 h-6 text-[10px] sm:text-xs uppercase tracking-widest font-bold ${isRunning ? "text-red-400 hover:text-red-300 hover:bg-red-950/30" : "text-green-400 hover:text-green-300 hover:bg-green-950/30"}`}
+            >
+              {isRunning ? (
+                <span className="flex items-center gap-1">
+                  <Pause className="w-3 h-3" /> Pausar
                 </span>
-                <Dialog>
-                  <DialogTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-6 w-6 text-slate-400 hover:text-white">
-                      <Maximize2 className="w-3 h-3" />
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="max-w-[90vw] h-[90vh] bg-slate-950 border-slate-800 p-0 flex flex-col">
-                    <DialogHeader className="p-4 bg-slate-900 border-b border-slate-800 shrink-0">
-                      <DialogTitle className="text-white">Análisis Detallado: Portería Local</DialogTitle>
-                    </DialogHeader>
-                    <div className="flex-1 p-4 overflow-hidden min-h-0 flex flex-col">
-                      <PorteriaResponsive events={events} />
-                    </div>
-                  </DialogContent>
-                </Dialog>
-              </div>
-
-              <div className="flex-1 overflow-hidden p-2 flex flex-col min-h-0">
-                <PorteriaResponsive events={events} />
-                <div className="text-[9px] text-center text-slate-600 mt-1 shrink-0">Tiros recibidos (% Paradas)</div>
-              </div>
-            </div>
+              ) : (
+                <span className="flex items-center gap-1">
+                  <Play className="w-3 h-3" /> Iniciar
+                </span>
+              )}
+            </Button>
           </div>
+        </div>
 
-          <div className="h-full overflow-hidden shadow-2xl shadow-black/50 rounded-lg bg-slate-900/50 min-h-0">
-            <ActionWizard
-              wizardState={wizardState}
-              activePlayer={getActiveTeamAndPlayer()}
-              isGoalkeeper={isGoalkeeper()}
-              handleBack={handleBack}
-              currentAction={currentAction}
-              handleActionSelect={handleActionSelect}
-              selectedDefenseType={selectedDefenseType}
-              setSelectedDefenseType={setSelectedDefenseType}
-              selectedLossType={selectedLossType}
-              setSelectedLossType={setSelectedLossType}
-              selectedCourtZone={selectedCourtZone}
-              setSelectedCourtZone={setSelectedCourtZone}
-              selectedGoalZone={selectedGoalZone}
-              setSelectedGoalZone={setSelectedGoalZone}
-              selectedContext={selectedContext}
-              toggleContext={toggleContext}
-              confirmEvent={confirmEvent}
+        {/* Contenedor principal con dos columnas laterales y centro */}
+        <div className="flex-1 grid grid-cols-3 gap-4 min-h-0 overflow-hidden">
+          {/* Panel Izquierdo - Equipo Local */}
+          <div className="flex flex-col gap-4">
+            <PlayerNumbersPanel
+              players={teamAPlayers}
+              selectedPlayer={selectedPlayerA}
+              onPlayerSelect={(num) => handlePlayerSelect("A", num)}
+              teamLabel="EQUIPO LOCAL"
+              teamColor="from-blue-600 to-blue-700"
             />
+            <ActionsPanel selectedPlayer={selectedPlayerA} isGoalkeeper={false} onActionSelect={handleActionSelect} />
           </div>
 
-          <div className="flex flex-col gap-2 sm:gap-4 h-full overflow-hidden min-h-0">
-            <div className="h-[40%] lg:h-[45%] overflow-hidden shrink-0">
-              <PlayerGrid
-                team="B"
-                players={teamBPlayers}
-                selectedPlayerA={selectedPlayerA}
-                selectedPlayerB={selectedPlayerB}
-                handlePlayerSelect={handlePlayerSelect}
-                teamName={teamBName}
-              />
-            </div>
-            <div className="flex-1 bg-slate-900 border border-slate-800 rounded-lg flex flex-col overflow-hidden min-h-0">
-              <div className="bg-slate-950 border-b border-slate-800 p-2 text-xs font-bold text-center text-amber-400 uppercase tracking-wider shrink-0">
-                <History className="w-3 h-3 inline-block mr-2" /> Historial
+          {/* Centro - Portería y Visualización */}
+          <div className="flex flex-col gap-4">
+            <CourtVisualization events={events} />
+            <OpponentGoalStats events={events} />
+          </div>
+
+          {/* Panel Derecho - Equipo Visitante */}
+          <div className="flex flex-col gap-4">
+            <PlayerNumbersPanel
+              players={teamBPlayers}
+              selectedPlayer={selectedPlayerB}
+              onPlayerSelect={(num) => handlePlayerSelect("B", num)}
+              teamLabel="EQUIPO VISITANTE"
+              teamColor="from-amber-600 to-amber-700"
+            />
+            <ActionsPanel selectedPlayer={selectedPlayerB} isGoalkeeper={false} onActionSelect={handleActionSelect} />
+          </div>
+        </div>
+
+        {/* Historial de Eventos */}
+        <div className="bg-slate-800 rounded-xl p-4 shadow-xl max-h-24 overflow-y-auto">
+          <div className="text-xs text-slate-400 mb-2 font-bold">ÚLTIMOS EVENTOS</div>
+          <div className="flex gap-2 flex-wrap">
+            {events.slice(-5).map((event, idx) => (
+              <div key={idx} className="bg-slate-700 px-3 py-1 rounded text-xs text-slate-200">
+                {event.action} - #{event.player}
               </div>
-              <div className="flex-1 overflow-hidden min-h-0">
-                <HistoryPanel
-                  events={events}
-                  teamAName={teamAName}
-                  teamBName={teamBName}
-                  onUndo={handleUndo}
-                  onExport={exportData}
-                  formatTime={formatTime}
-                />
-              </div>
-            </div>
+            ))}
           </div>
         </div>
       </div>
