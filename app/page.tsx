@@ -2,15 +2,9 @@
 
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { useIsMobile } from "@/hooks/use-mobile"
-import { Pause, Play, ArrowLeft, Users, Trophy, Settings, Edit3, Shield, AlertCircle } from "lucide-react"
-import { PlayerNumbersPanel } from "@/components/player-numbers-panel"
-import { ActionsPanel } from "@/components/actions-panel"
-import { CourtVisualization } from "@/components/court-visualization"
-import { OpponentGoalStats } from "@/components/opponent-goal-stats"
+import { ArrowLeft, Trophy, Shield } from "lucide-react"
 
 // --- TIPOS DE DATOS ---
-
 type Player = {
   number: number
   name: string
@@ -30,11 +24,7 @@ type Event = {
   context?: string[]
 }
 
-type WizardState = "IDLE" | "ACTION_SELECTION" | "DETAILS"
-type AppState = "SETUP" | "MATCH"
-
 // --- CONSTANTES ---
-
 const COURT_ZONES = [
   "Extremo Izq",
   "Lateral Izq",
@@ -58,7 +48,18 @@ const GAME_SITUATIONS = [
   "Contraataque",
 ]
 
-// --- COMPONENTES AUXILIARES (DEFINIDOS FUERA) ---
+// Mock jugadores
+const PLAYERS_A: Player[] = Array.from({ length: 14 }, (_, i) => ({
+  number: i + 1,
+  name: `Jugador ${i + 1}`,
+  isGoalkeeper: i === 0,
+}))
+
+const PLAYERS_B: Player[] = Array.from({ length: 14 }, (_, i) => ({
+  number: i + 1,
+  name: `Oponente ${i + 1}`,
+  isGoalkeeper: i === 0,
+}))
 
 const HeaderScoreboard = ({
   localScore,
@@ -70,20 +71,26 @@ const HeaderScoreboard = ({
   setIsRunning,
   formatTime,
 }: any) => (
-  <div className="bg-slate-900 border-b border-slate-800 px-4 sm:px-6 py-2 flex items-center justify-between shadow-md shrink-0 z-30 relative h-16 sm:h-20 box-border">
+  <div className="bg-gradient-to-r from-blue-600 via-cyan-500 to-blue-600 border-b-4 border-blue-400 px-2 sm:px-4 md:px-6 py-2 sm:py-3 flex items-center justify-between shadow-lg shrink-0 z-30 relative h-auto box-border">
     {/* Equipo Local */}
-    <div className="flex flex-col items-start min-w-[100px] sm:min-w-[150px]">
-      <span className="text-[10px] sm:text-xs text-blue-400 font-bold tracking-wider mb-1">LOCAL</span>
-      <div className="flex items-baseline gap-2 sm:gap-3">
-        <span className="text-2xl sm:text-3xl font-bold text-white leading-none tabular-nums">{localScore}</span>
-        <span className="text-xs sm:text-sm text-slate-400 truncate max-w-[80px] sm:max-w-[120px]">{teamAName}</span>
+    <div className="flex flex-col items-start min-w-fit sm:min-w-[120px] md:min-w-[150px]">
+      <span className="text-[9px] sm:text-xs md:text-sm font-bold text-white tracking-widest mb-0.5 sm:mb-1">
+        LOCAL
+      </span>
+      <div className="flex items-baseline gap-1 sm:gap-2 md:gap-3">
+        <span className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-white leading-none tabular-nums">
+          {localScore}
+        </span>
+        <span className="text-[8px] sm:text-xs md:text-sm text-white/80 truncate max-w-[60px] sm:max-w-[100px]">
+          {teamAName}
+        </span>
       </div>
     </div>
 
     {/* Cronómetro Central */}
-    <div className="flex flex-col items-center absolute left-1/2 -translate-x-1/2 top-1">
-      <div className="bg-black/40 px-4 sm:px-6 py-1 rounded-b-xl border-b border-x border-slate-800 shadow-[0_0_15px_rgba(34,197,94,0.1)]">
-        <span className="font-mono text-3xl sm:text-4xl font-bold text-green-400 tracking-widest tabular-nums">
+    <div className="flex flex-col items-center absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2">
+      <div className="bg-black/50 px-2 sm:px-3 md:px-4 py-1 rounded-lg border-2 border-green-400 shadow-[0_0_15px_rgba(34,197,94,0.3)]">
+        <span className="font-mono text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-green-400 tracking-widest tabular-nums">
           {formatTime(time)}
         </span>
       </div>
@@ -91,860 +98,426 @@ const HeaderScoreboard = ({
         size="sm"
         variant="ghost"
         onClick={() => setIsRunning(!isRunning)}
-        className={`mt-1 h-6 text-[10px] sm:text-xs uppercase tracking-widest font-bold ${isRunning ? "text-red-400 hover:text-red-300 hover:bg-red-950/30" : "text-green-400 hover:text-green-300 hover:bg-green-950/30"}`}
+        className={`mt-1 h-5 sm:h-6 text-[8px] sm:text-xs uppercase tracking-widest font-bold ${isRunning ? "text-red-300 hover:text-red-200 hover:bg-red-950/30" : "text-green-300 hover:text-green-200 hover:bg-green-950/30"}`}
       >
-        {isRunning ? (
-          <span className="flex items-center gap-1">
-            <Pause className="w-3 h-3" /> Pausar
-          </span>
-        ) : (
-          <span className="flex items-center gap-1">
-            <Play className="w-3 h-3" /> Iniciar
-          </span>
-        )}
+        {isRunning ? "PAUSAR" : "INICIAR"}
       </Button>
     </div>
 
     {/* Equipo Visitante */}
-    <div className="flex flex-col items-end min-w-[100px] sm:min-w-[150px]">
-      <span className="text-[10px] sm:text-xs text-amber-400 font-bold tracking-wider mb-1">VISITANTE</span>
-      <div className="flex items-baseline gap-2 sm:gap-3 flex-row-reverse">
-        <span className="text-2xl sm:text-3xl font-bold text-white leading-none tabular-nums">{visitorScore}</span>
-        <span className="text-xs sm:text-sm text-slate-400 truncate max-w-[80px] sm:max-w-[120px]">{teamBName}</span>
+    <div className="flex flex-col items-end min-w-fit sm:min-w-[120px] md:min-w-[150px]">
+      <span className="text-[9px] sm:text-xs md:text-sm font-bold text-white tracking-widest mb-0.5 sm:mb-1">
+        VISITANTE
+      </span>
+      <div className="flex items-baseline gap-1 sm:gap-2 md:gap-3 flex-row-reverse">
+        <span className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-white leading-none tabular-nums">
+          {visitorScore}
+        </span>
+        <span className="text-[8px] sm:text-xs md:text-sm text-white/80 truncate max-w-[60px] sm:max-w-[100px]">
+          {teamBName}
+        </span>
       </div>
     </div>
   </div>
 )
 
-const PlayerGrid = ({ team, players, selectedPlayerA, selectedPlayerB, handlePlayerSelect, teamName }: any) => (
-  <div className="bg-slate-900 border border-slate-800 rounded-lg p-2 h-full flex flex-col min-h-0">
-    <div
-      className={`text-xs font-bold mb-2 uppercase tracking-wide flex items-center gap-2 px-1 shrink-0 ${team === "A" ? "text-blue-400" : "text-amber-400"}`}
-    >
-      <Trophy className="w-3 h-3" /> {teamName}
-    </div>
-    <div className="grid grid-cols-4 gap-2 overflow-y-auto pb-2 pr-1 custom-scrollbar flex-1 content-start min-h-0">
-      {players.map((player: Player) => {
-        const isSelected = (team === "A" ? selectedPlayerA : selectedPlayerB) === player.number
-        return (
-          <Button
-            key={player.number}
-            variant="outline"
-            className={`h-12 sm:h-14 flex flex-col justify-center border-slate-700 relative transition-all duration-75 active:scale-95 ${
-              isSelected
-                ? team === "A"
-                  ? "bg-blue-600 border-blue-500 text-white ring-2 ring-blue-400/30"
-                  : "bg-amber-600 border-amber-500 text-white ring-2 ring-amber-400/30"
-                : "bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white"
-            }`}
-            onClick={() => handlePlayerSelect(team, player.number)}
-          >
-            <span className="text-lg font-bold leading-none">#{player.number}</span>
-            {player.isGoalkeeper && (
-              <span className="absolute -top-1.5 -right-1.5 text-[9px] bg-slate-900 text-slate-400 px-1.5 py-0.5 rounded-full border border-slate-700 font-mono">
-                GK
-              </span>
-            )}
-          </Button>
-        )
-      })}
-    </div>
-  </div>
-)
-
-const ActionWizard = ({
-  wizardState,
-  activePlayer,
-  isGoalkeeper,
-  handleBack,
-  currentAction,
-  handleActionSelect,
-  selectedDefenseType,
-  setSelectedDefenseType,
-  selectedLossType,
-  setSelectedLossType,
-  selectedCourtZone,
-  setSelectedCourtZone,
-  selectedGoalZone,
-  setSelectedGoalZone,
-  selectedContext,
-  toggleContext,
-  confirmEvent,
-}: any) => (
-  <div className="bg-slate-900 border border-slate-800 rounded-lg p-3 h-full flex flex-col relative overflow-hidden min-h-0">
-    {wizardState === "IDLE" && (
-      <div className="flex-1 flex flex-col items-center justify-center text-center p-6 space-y-4 opacity-40">
-        <Users className="w-20 h-20 text-slate-500 stroke-1" />
-        <p className="text-slate-400 font-medium">Selecciona un jugador para registrar una acción</p>
-      </div>
-    )}
-
-    {wizardState === "ACTION_SELECTION" && (
-      <div className="flex-1 flex flex-col animate-in fade-in zoom-in-95 duration-150 min-h-0">
-        <div className="flex justify-between items-center mb-3 pb-2 border-b border-slate-800 shrink-0">
-          <Button variant="ghost" size="sm" onClick={handleBack} className="text-slate-400 hover:text-white -ml-2">
-            <ArrowLeft className="w-4 h-4 mr-1" /> Atrás
-          </Button>
-          <div className="text-right">
-            <span className="text-xs text-slate-500 block uppercase">Jugador Seleccionado</span>
-            <span className="font-bold text-white text-lg">
-              #{activePlayer?.player}{" "}
-              {isGoalkeeper && <span className="text-xs text-slate-400 font-normal ml-1">(Portero)</span>}
-            </span>
-          </div>
-        </div>
-        <div className="grid grid-cols-2 gap-3 flex-1 content-start overflow-y-auto pb-4 min-h-0">
-          {!isGoalkeeper ? (
-            <>
-              <Button
-                className="h-20 text-xl font-black bg-green-600 hover:bg-green-500 text-white shadow-lg col-span-2"
-                onClick={() => handleActionSelect("GOL")}
-              >
-                GOL
-              </Button>
-              <Button
-                className="h-16 text-base font-bold bg-green-700 hover:bg-green-600 text-white col-span-2"
-                onClick={() => handleActionSelect("GOL CAMPO A CAMPO")}
-              >
-                GOL CAMPO A CAMPO
-              </Button>
-              <Button
-                className="h-16 text-lg font-bold bg-blue-600 hover:bg-blue-500 text-white"
-                onClick={() => handleActionSelect("PARADA")}
-              >
-                PARADA
-              </Button>
-              <Button
-                className="h-16 text-lg font-bold bg-yellow-600 hover:bg-yellow-500 text-white"
-                onClick={() => handleActionSelect("FUERA")}
-              >
-                FUERA
-              </Button>
-              <Button
-                className="h-14 font-semibold bg-slate-800 border border-slate-700"
-                onClick={() => handleActionSelect("POSTE")}
-              >
-                POSTE
-              </Button>
-              <Button
-                className="h-14 font-semibold bg-slate-800 border border-slate-700"
-                onClick={() => handleActionSelect("BLOCADO")}
-              >
-                BLOCADO
-              </Button>
-              <Button
-                className="h-14 font-semibold bg-red-600 hover:bg-red-500 text-white col-span-2"
-                onClick={() => handleActionSelect("PÉRDIDA")}
-              >
-                PÉRDIDA / ERROR / FALTA ATAQUE
-              </Button>
-              <Button
-                className="h-14 font-semibold bg-slate-700 hover:bg-slate-600"
-                onClick={() => handleActionSelect("FALTA")}
-              >
-                FALTA (Defensiva)
-              </Button>
-              <Button
-                className="h-14 font-semibold bg-purple-600 hover:bg-purple-500"
-                onClick={() => handleActionSelect("7 METROS")}
-              >
-                7 METROS PROVOCADO
-              </Button>
-              <Button
-                className="h-14 font-semibold bg-slate-700 hover:bg-slate-600 col-span-2"
-                onClick={() => handleActionSelect("ASISTENCIA")}
-              >
-                ASISTENCIA
-              </Button>
-            </>
-          ) : (
-            <>
-              <Button
-                className="h-24 text-2xl font-black bg-blue-600 hover:bg-blue-500 col-span-2"
-                onClick={() => handleActionSelect("PARADA")}
-              >
-                PARADA
-              </Button>
-              <Button
-                className="h-24 text-2xl font-black bg-red-600 hover:bg-red-500 col-span-2"
-                onClick={() => handleActionSelect("GOL ENCAJADO")}
-              >
-                GOL ENCAJADO
-              </Button>
-              <Button
-                className="h-16 text-base font-bold bg-green-700 hover:bg-green-600 text-white col-span-2"
-                onClick={() => handleActionSelect("GOL CAMPO A CAMPO")}
-              >
-                GOL CAMPO A CAMPO
-              </Button>
-              <Button
-                className="h-16 text-lg font-bold bg-green-600 hover:bg-green-500 col-span-2"
-                onClick={() => handleActionSelect("ASISTENCIA")}
-              >
-                ASISTENCIA (Pase)
-              </Button>
-            </>
-          )}
-        </div>
-      </div>
-    )}
-
-    {wizardState === "DETAILS" && (
-      <div className="flex-1 flex flex-col h-full animate-in slide-in-from-right-4 duration-200 min-h-0">
-        <div className="flex justify-between items-center mb-2 pb-2 border-b border-slate-800 shrink-0">
-          <Button variant="ghost" size="sm" onClick={handleBack} className="-ml-2 text-slate-400">
-            <ArrowLeft className="w-4 h-4" />
-          </Button>
-          <span className="text-green-400 font-bold tracking-wider">{currentAction}</span>
-        </div>
-        <div className="flex-1 overflow-y-auto space-y-4 pb-20 custom-scrollbar pr-1 min-h-0">
-          {/* DEFENSA RIVAL (SIEMPRE VISIBLE) */}
-          <div className="bg-slate-900/50 p-3 rounded-lg border border-slate-800">
-            <div className="text-[10px] font-bold text-slate-500 mb-2 uppercase tracking-wider flex items-center gap-1">
-              <Shield className="w-3 h-3" /> Defensa Rival / Situación
-            </div>
-            <div className="grid grid-cols-3 gap-2">
-              {DEFENSE_TYPES.map((def) => (
-                <Button
-                  key={def}
-                  size="sm"
-                  variant={selectedDefenseType === def ? "default" : "outline"}
-                  className={`text-xs ${selectedDefenseType === def ? "bg-indigo-600 text-white" : "bg-slate-900 border-slate-700 text-slate-400"}`}
-                  onClick={() => setSelectedDefenseType(def)}
-                >
-                  {def}
-                </Button>
-              ))}
-            </div>
-          </div>
-
-          {currentAction === "PÉRDIDA" && (
-            <div className="bg-red-950/20 p-3 rounded-lg border border-red-900/50">
-              <div className="text-[10px] font-bold text-red-400 mb-2 uppercase tracking-wider flex items-center gap-1">
-                <AlertCircle className="w-3 h-3" /> Tipo de Error
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                {LOSS_TYPES.map((loss) => (
-                  <Button
-                    key={loss}
-                    size="sm"
-                    variant={selectedLossType === loss ? "default" : "outline"}
-                    className={`text-xs h-auto py-2 ${selectedLossType === loss ? "bg-red-600 text-white" : "bg-slate-900 border-slate-700 text-slate-400"}`}
-                    onClick={() => setSelectedLossType(loss)}
-                  >
-                    {loss}
-                  </Button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <div className="bg-slate-900/50 p-3 rounded-lg border border-slate-800">
-            <div className="text-[10px] font-bold text-slate-500 mb-2 uppercase tracking-wider">Zona de Acción</div>
-            <div className="grid grid-cols-3 gap-2">
-              {COURT_ZONES.map((z) => (
-                <Button
-                  key={z}
-                  size="sm"
-                  variant={selectedCourtZone === z ? "default" : "outline"}
-                  className={`h-10 text-[10px] leading-tight break-words whitespace-normal ${selectedCourtZone === z ? "bg-blue-600 text-white" : "bg-slate-900 border-slate-700 text-slate-400"}`}
-                  onClick={() => setSelectedCourtZone(z)}
-                >
-                  {z}
-                </Button>
-              ))}
-            </div>
-          </div>
-
-          {["GOL", "PARADA", "FUERA", "POSTE", "BLOCADO", "GOL ENCAJADO"].includes(currentAction || "") && (
-            <div className="bg-slate-900/50 p-3 rounded-lg border border-slate-800">
-              <div className="text-[10px] font-bold text-slate-500 mb-2 uppercase tracking-wider">
-                Dirección Lanzamiento
-              </div>
-              <div className="aspect-square max-w-[200px] mx-auto grid grid-cols-3 gap-1 bg-slate-800 p-1 rounded">
-                {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((z) => (
-                  <Button
-                    key={z}
-                    variant="ghost"
-                    className={`h-full w-full text-lg font-bold rounded-sm transition-all ${selectedGoalZone === z ? "bg-green-500 text-white" : "bg-slate-900/50 text-slate-600 hover:bg-slate-700 hover:text-slate-300"}`}
-                    onClick={() => setSelectedGoalZone(z)}
-                  >
-                    {z}
-                  </Button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <div className="bg-slate-900/50 p-3 rounded-lg border border-slate-800">
-            <div className="text-[10px] font-bold text-slate-500 mb-2 uppercase tracking-wider">Situación de Juego</div>
-            <div className="flex flex-wrap gap-2">
-              {GAME_SITUATIONS.map((ctx) => (
-                <Button
-                  key={ctx}
-                  size="sm"
-                  variant={selectedContext.includes(ctx) ? "default" : "outline"}
-                  className={`text-xs ${selectedContext.includes(ctx) ? "bg-orange-600 hover:bg-orange-500 border-orange-500" : "bg-slate-900 border-slate-700"}`}
-                  onClick={() => toggleContext(ctx)}
-                >
-                  {ctx}
-                </Button>
-              ))}
-            </div>
-          </div>
-        </div>
-        <div className="absolute bottom-3 left-3 right-3 z-10">
-          <Button
-            size="lg"
-            className="w-full h-12 bg-green-600 hover:bg-green-500 text-white shadow-xl font-bold tracking-widest text-lg"
-            onClick={() => confirmEvent()}
-          >
-            CONFIRMAR
-          </Button>
-        </div>
-      </div>
-    )}
-  </div>
-)
-
-const PorteriaResponsive = ({ events }: { events: Event[] }) => {
-  // --- LÓGICA DE FILTRADO ACTUALIZADA ---
-  // Filtramos SOLO acciones que representan un TIRO CONTRA LA PORTERÍA LOCAL.
-  const shots = events.filter((e) => {
-    // 1. Debe tener zona de portería
-    if (!e.goalZone) return false
-
-    // 2. Si es Equipo B (Visitante), nos vale todo lo que sea tiro
-    if (e.team === "B") {
-      return ["GOL", "PARADA", "FUERA", "POSTE", "BLOCADO"].includes(e.action)
-    }
-
-    // 3. Si es Equipo A (Local), SOLO acciones del PORTERO defendiendo
-    if (e.team === "A") {
-      return ["PARADA", "GOL ENCAJADO"].includes(e.action)
-    }
-
-    // Cualquier otra cosa (ej. Gol de Jugador A en ataque) se ignora
-    return false
-  })
-
-  // Cálculos sobre los tiros FILTRADOS
-  const total = shots.length
-
-  // Goles encajados: (Gol de B) O (Gol Encajado registrado por A)
-  const goalsTotal = shots.filter(
-    (s) => (s.team === "B" && s.action === "GOL") || (s.team === "A" && s.action === "GOL ENCAJADO"),
-  ).length
-
-  // Paradas: (Parada de A) O (Parada registrada sobre B)
-  const savesTotal = shots.filter((s) => s.action === "PARADA" || s.action === "BLOCADO").length
-
-  // Tiros fuera/poste
-  const missTotal = shots.filter((s) => s.action === "FUERA" || s.action === "POSTE").length
-
-  // Cálculo de Porcentaje: (Paradas / (Paradas + Goles)) * 100
-  // Excluimos "Fuera" y "Poste" del denominador de efectividad pura del portero si se quiere % de acierto bajo palos,
-  // PERO habitualmente % Paradas es Paradas / Tiros a Puerta (Goles + Paradas).
-  const shotsOnTarget = goalsTotal + savesTotal
-  const percentageTotal = shotsOnTarget > 0 ? Math.round((savesTotal / shotsOnTarget) * 100) : 0
-
-  const getZoneStats = (zone: number) => {
-    const zoneShots = shots.filter((s) => s.goalZone === zone)
-    const count = zoneShots.length
-
-    const zGoals = zoneShots.filter(
-      (s) => (s.team === "B" && s.action === "GOL") || (s.team === "A" && s.action === "GOL ENCAJADO"),
-    ).length
-
-    const zSaves = zoneShots.filter((s) => s.action === "PARADA" || s.action === "BLOCADO").length
-
-    // Porcentaje de zona
-    const zOnTarget = zGoals + zSaves
-    const zonePercentage = zOnTarget > 0 ? Math.round((zSaves / zOnTarget) * 100) : 0
-
-    return { count, goals: zGoals, saves: zSaves, zonePercentage }
-  }
-
-  const zones = [1, 2, 3, 4, 5, 6, 7, 8, 9]
-
-  return (
-    <div className="w-full h-full flex flex-col">
-      <div className="flex justify-between text-[10px] text-slate-400 mb-1 px-1 shrink-0">
-        <span>
-          Tiros: <b className="text-white">{total}</b>
-        </span>
-        <span>
-          Goles: <b className="text-red-400">{goalsTotal}</b>
-        </span>
-        <span>
-          % Paradas:{" "}
-          <b className={`text-lg ${percentageTotal > 35 ? "text-green-400" : "text-amber-400"}`}>{percentageTotal}%</b>
-        </span>
-      </div>
-
-      <div className="flex-1 grid grid-cols-3 gap-1 bg-slate-800/50 p-1 rounded-lg border border-slate-800 min-h-0">
-        {zones.map((z) => {
-          const stats = getZoneStats(z)
-          // Intensidad visual basada en cantidad total de tiros
-          const intensity = total > 0 ? stats.count / total : 0
-          const bgOpacity = intensity > 0 ? Math.min(intensity * 0.8 + 0.1, 0.9) : 0
-
-          return (
-            <div
-              key={z}
-              className="relative rounded border border-slate-700/50 flex flex-col items-center justify-center overflow-hidden"
-              style={{ backgroundColor: `rgba(59, 130, 246, ${bgOpacity})` }}
-            >
-              <span className="absolute top-0.5 right-1 text-[8px] text-slate-500 font-mono opacity-50">Z{z}</span>
-
-              <div className="text-center z-10">
-                <span
-                  className={`text-xl sm:text-2xl font-bold drop-shadow-md ${stats.zonePercentage > 50 ? "text-green-300" : "text-white"}`}
-                >
-                  {stats.count > 0 ? `${stats.zonePercentage}%` : "-"}
-                </span>
-                {stats.count > 0 && (
-                  <div className="text-[8px] font-bold mt-[-2px] text-slate-300 drop-shadow-sm flex gap-1 justify-center">
-                    <span className="text-blue-200">{stats.saves}P</span>
-                    <span>/</span>
-                    <span className="text-red-300">{stats.goals}G</span>
-                  </div>
-                )}
-              </div>
-            </div>
-          )
-        })}
-      </div>
-    </div>
-  )
-}
-
-// --- COMPONENTE PRINCIPAL ---
-
-export default function EventPadPage() {
-  const [appState, setAppState] = useState<AppState>("SETUP")
-
-  const [teamAName, setTeamAName] = useState("Equipo Local")
-  const [teamBName, setTeamBName] = useState("Equipo Visitante")
-  const [teamAPlayers, setTeamAPlayers] = useState<Player[]>(
-    Array.from({ length: 16 }, (_, i) => ({ number: i + 1, name: `Jugador ${i + 1}`, isGoalkeeper: i === 0 })),
-  )
-  const [teamBPlayers, setTeamBPlayers] = useState<Player[]>(
-    Array.from({ length: 16 }, (_, i) => ({ number: i + 1, name: `Jugador ${i + 1}`, isGoalkeeper: i === 0 })),
-  )
-
-  const [editingPlayer, setEditingPlayer] = useState<{ team: "A" | "B"; index: number } | null>(null)
-  const [tempPlayerName, setTempPlayerName] = useState("")
-  const [tempPlayerNumber, setTempPlayerNumber] = useState("")
-  const [tempPlayerPosition, setTempPlayerPosition] = useState<"field" | "goalkeeper">("field")
-
-  const [selectedPlayerA, setSelectedPlayerA] = useState<number | null>(null)
-  const [selectedPlayerB, setSelectedPlayerB] = useState<number | null>(null)
-  const [localScore, setLocalScore] = useState(0)
-  const [visitorScore, setVisitorScore] = useState(0)
-  const [time, setTime] = useState(0)
-  const [isRunning, setIsRunning] = useState(false)
-  const [events, setEvents] = useState<Event[]>([])
-
-  const [wizardState, setWizardState] = useState<WizardState>("IDLE")
-  const [currentAction, setCurrentAction] = useState<string | null>(null)
-  const [selectedCourtZone, setSelectedCourtZone] = useState<string | null>(null)
-  const [selectedGoalZone, setSelectedGoalZone] = useState<number | null>(null)
-  const [selectedContext, setSelectedContext] = useState<string[]>([])
-  const [selectedLossType, setSelectedLossType] = useState<string | null>(null)
-  const [selectedDefenseType, setSelectedDefenseType] = useState<string | null>(null)
-
-  const isMobile = useIsMobile()
-
-  useEffect(() => {
-    let interval: NodeJS.Timeout
-    if (isRunning) {
-      interval = setInterval(() => {
-        setTime((prev) => prev + 1)
-      }, 1000)
-    }
-    return () => clearInterval(interval)
-  }, [isRunning])
-
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60)
-    const secs = seconds % 60
-    return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`
-  }
-
-  const getActiveTeamAndPlayer = () => {
-    if (selectedPlayerA !== null) return { team: "A" as const, player: selectedPlayerA }
-    if (selectedPlayerB !== null) return { team: "B" as const, player: selectedPlayerB }
-    return null
-  }
-
-  const isGoalkeeper = () => {
-    const activePlayer = getActiveTeamAndPlayer()
-    if (!activePlayer) return false
-    const players = activePlayer.team === "A" ? teamAPlayers : teamBPlayers
-    return players.find((p) => p.number === activePlayer.player)?.isGoalkeeper || false
-  }
-
-  const handleEditPlayer = (team: "A" | "B", index: number) => {
-    const player = team === "A" ? teamAPlayers[index] : teamBPlayers[index]
-    setEditingPlayer({ team, index })
-    setTempPlayerName(player.name)
-    setTempPlayerNumber(player.number.toString())
-    setTempPlayerPosition(player.isGoalkeeper ? "goalkeeper" : "field")
-  }
-
-  const handleSavePlayer = () => {
-    if (!editingPlayer) return
-    const { team, index } = editingPlayer
-    const updatedPlayer: Player = {
-      number: Number.parseInt(tempPlayerNumber) || index + 1,
-      name: tempPlayerName || `Jugador ${index + 1}`,
-      isGoalkeeper: tempPlayerPosition === "goalkeeper",
-    }
-    if (team === "A") {
-      const newPlayers = [...teamAPlayers]
-      newPlayers[index] = updatedPlayer
-      setTeamAPlayers(newPlayers)
-    } else {
-      const newPlayers = [...teamBPlayers]
-      newPlayers[index] = updatedPlayer
-      setTeamBPlayers(newPlayers)
-    }
-    setEditingPlayer(null)
-  }
-
-  const handlePlayerSelect = (team: "A" | "B", playerNumber: number) => {
-    if (team === "A") {
-      setSelectedPlayerA(playerNumber)
-      setSelectedPlayerB(null)
-    } else {
-      setSelectedPlayerB(playerNumber)
-      setSelectedPlayerA(null)
-    }
-    setWizardState("ACTION_SELECTION")
-    resetWizardData()
-  }
-
-  const resetWizardData = () => {
-    setCurrentAction(null)
-    setSelectedCourtZone(null)
-    setSelectedGoalZone(null)
-    setSelectedContext([])
-    setSelectedLossType(null)
-    setSelectedDefenseType(null)
-  }
-
-  const handleBack = () => {
-    if (wizardState === "DETAILS") {
-      setWizardState("ACTION_SELECTION")
-      resetWizardData()
-    } else if (wizardState === "ACTION_SELECTION") {
-      setWizardState("IDLE")
-      setSelectedPlayerA(null)
-      setSelectedPlayerB(null)
-      resetWizardData()
-    }
-  }
-
-  const handleActionSelect = (action: string) => {
-    setCurrentAction(action)
-    const actionsWithDetails = [
-      "GOL",
-      "GOL CAMPO A CAMPO",
-      "PARADA",
-      "GOL ENCAJADO",
-      "FUERA",
-      "POSTE",
-      "BLOCADO",
-      "PÉRDIDA",
-    ]
-    if (actionsWithDetails.includes(action)) setWizardState("DETAILS")
-    else confirmEvent(action)
-  }
-
-  const confirmEvent = (actionOverride?: string) => {
-    const activePlayer = getActiveTeamAndPlayer()
-    if (!activePlayer) return
-    const finalAction = actionOverride || currentAction
-    if (!finalAction) return
-
-    const event: Event = {
-      id: Date.now().toString(),
-      timestamp: time,
-      player: activePlayer.player,
-      team: activePlayer.team,
-      action: finalAction,
-      courtZone: selectedCourtZone || undefined,
-      goalZone: selectedGoalZone || undefined,
-      specificAction: selectedLossType || undefined,
-      defenseType: selectedDefenseType || undefined,
-      context: selectedContext.length > 0 ? selectedContext : undefined,
-    }
-
-    setEvents((prev) => [...prev, event])
-    if (finalAction === "GOL" || finalAction === "GOL CAMPO A CAMPO") {
-      if (activePlayer.team === "A") setLocalScore((prev) => prev + 1)
-      else setVisitorScore((prev) => prev + 1)
-    }
-    setWizardState("IDLE")
-    setSelectedPlayerA(null)
-    setSelectedPlayerB(null)
-    resetWizardData()
-  }
-
-  const toggleContext = (ctx: string) => {
-    const situationTypes = GAME_SITUATIONS.map((s) => s)
-    if (situationTypes.includes(ctx)) {
-      const cleanContext = selectedContext.filter((c) => !situationTypes.includes(c))
-      setSelectedContext([...cleanContext, ctx])
-    } else {
-      setSelectedContext((prev) => (prev.includes(ctx) ? prev.filter((c) => c !== ctx) : [...prev, ctx]))
-    }
-  }
-
-  const handleUndo = () => {
-    if (events.length === 0) return
-    const lastEvent = events[events.length - 1]
-    if (lastEvent.action === "GOL" || lastEvent.action === "GOL CAMPO A CAMPO") {
-      if (lastEvent.team === "A") setLocalScore((prev) => Math.max(0, prev - 1))
-      else setVisitorScore((prev) => Math.max(0, prev - 1))
-    }
-    setEvents((prev) => prev.slice(0, -1))
-  }
-
-  const exportData = () => {
-    const csv = [
-      [
-        "Tiempo",
-        "Equipo",
-        "Jugador",
-        "Acción Principal",
-        "Detalle Error",
-        "Defensa Rival",
-        "Zona Pista",
-        "Zona Portería",
-        "Contexto",
-      ].join(","),
-      ...events.map((e) =>
-        [
-          formatTime(e.timestamp),
-          e.team === "A" ? teamAName : teamBName,
-          `#${e.player}`,
-          e.action,
-          e.specificAction || "",
-          e.defenseType || "",
-          e.courtZone || "",
-          e.goalZone || "",
-          e.context?.join("+") || "",
-        ].join(","),
-      ),
-    ].join("\n")
-    const blob = new Blob([csv], { type: "text/csv" })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement("a")
-    a.href = url
-    a.download = `partido-${Date.now()}.csv`
-    a.click()
-  }
-
-  if (appState === "SETUP") {
+const PlayerNumbersPanel = ({
+  team,
+  players,
+  selectedPlayer,
+  onPlayerSelect,
+  teamName,
+}: {
+  team: "A" | "B"
+  players: Player[]
+  selectedPlayer: number | null
+  onPlayerSelect: (number: number) => void
+  teamName: string
+}) => {
+  if (selectedPlayer !== null) {
     return (
-      <div className="min-h-screen bg-slate-950 text-white p-4 overflow-auto">
-        <div className="max-w-6xl mx-auto space-y-6">
-          <div className="text-center space-y-2 py-6">
-            <Settings className="w-16 h-16 mx-auto text-blue-400" />
-            <h1 className="text-3xl font-bold">Configuración del Partido</h1>
-            <p className="text-slate-400">Configura los equipos antes de comenzar</p>
-          </div>
-          <div className="grid md:grid-cols-2 gap-4">
-            <div className="bg-slate-900 border border-slate-800 rounded-lg p-4">
-              <label className="block text-sm font-bold text-blue-400 mb-2">Equipo Local</label>
-              <input
-                type="text"
-                value={teamAName}
-                onChange={(e) => setTeamAName(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-700 rounded px-3 py-2 text-white"
-                placeholder="Nombre del equipo"
-              />
-            </div>
-            <div className="bg-slate-900 border border-slate-800 rounded-lg p-4">
-              <label className="block text-sm font-bold text-amber-400 mb-2">Equipo Visitante</label>
-              <input
-                type="text"
-                value={teamBName}
-                onChange={(e) => setTeamBName(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-700 rounded px-3 py-2 text-white"
-                placeholder="Nombre del equipo"
-              />
-            </div>
-          </div>
-          <div className="grid md:grid-cols-2 gap-4">
-            <div className="bg-slate-900 border border-slate-800 rounded-lg p-4">
-              <h3 className="text-sm font-bold text-blue-400 mb-3">Jugadores {teamAName}</h3>
-              <div className="space-y-2 max-h-96 overflow-y-auto custom-scrollbar pr-2">
-                {teamAPlayers.map((player, idx) => (
-                  <div key={idx} className="bg-slate-900 border border-slate-800 rounded p-2 flex items-center gap-2">
-                    <span className="text-blue-400 font-bold w-8">#{player.number}</span>
-                    <span className="flex-1 text-sm">{player.name}</span>
-                    <Button size="sm" variant="ghost" onClick={() => handleEditPlayer("A", idx)}>
-                      <Edit3 className="w-3 h-3" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div className="bg-slate-900 border border-slate-800 rounded-lg p-4">
-              <h3 className="text-sm font-bold text-amber-400 mb-3">Jugadores {teamBName}</h3>
-              <div className="space-y-2 max-h-96 overflow-y-auto custom-scrollbar pr-2">
-                {teamBPlayers.map((player, idx) => (
-                  <div key={idx} className="bg-slate-900 border border-slate-800 rounded p-2 flex items-center gap-2">
-                    <span className="text-amber-400 font-bold w-8">#{player.number}</span>
-                    <span className="flex-1 text-sm">{player.name}</span>
-                    <Button size="sm" variant="ghost" onClick={() => handleEditPlayer("B", idx)}>
-                      <Edit3 className="w-3 h-3" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-          {editingPlayer && (
-            <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
-              <div className="bg-slate-900 p-6 rounded-lg border border-slate-800 w-96 space-y-4">
-                <h3 className="font-bold text-lg">Editar Jugador</h3>
-                <input
-                  type="number"
-                  value={tempPlayerNumber}
-                  onChange={(e) => setTempPlayerNumber(e.target.value)}
-                  className="w-full bg-slate-950 border-slate-700 p-2 rounded"
-                  placeholder="Número"
-                />
-                <input
-                  type="text"
-                  value={tempPlayerName}
-                  onChange={(e) => setTempPlayerName(e.target.value)}
-                  className="w-full bg-slate-950 border-slate-700 p-2 rounded"
-                  placeholder="Nombre"
-                />
-                <select
-                  value={tempPlayerPosition}
-                  onChange={(e) => setTempPlayerPosition(e.target.value as any)}
-                  className="w-full bg-slate-950 border-slate-700 p-2 rounded"
-                >
-                  <option value="field">Campo</option>
-                  <option value="goalkeeper">Portero</option>
-                </select>
-                <Button className="w-full bg-green-600" onClick={handleSavePlayer}>
-                  Guardar
-                </Button>
-              </div>
-            </div>
-          )}
-          <div className="flex justify-center pt-6">
-            <Button
-              size="lg"
-              className="bg-green-600 hover:bg-green-500 text-white font-bold px-12 py-6 text-xl"
-              onClick={() => setAppState("MATCH")}
-            >
-              <Play className="w-6 h-6 mr-2" />
-              INICIAR PARTIDO
-            </Button>
-          </div>
+      <div
+        className={`bg-gradient-to-br ${team === "A" ? "from-blue-600 to-blue-800" : "from-amber-600 to-amber-800"} border-2 ${team === "A" ? "border-blue-400" : "border-amber-400"} rounded-lg p-2 sm:p-3 h-full flex flex-col min-h-0 shadow-lg`}
+      >
+        <div className="text-xs sm:text-sm font-bold text-white uppercase tracking-wide flex items-center gap-2 px-1 shrink-0 mb-2">
+          <Trophy className="w-4 h-4" /> {teamName} - Jugador #{selectedPlayer}
+        </div>
+        <div className="flex-1 flex items-center justify-center text-center">
+          <div className="text-5xl sm:text-6xl md:text-7xl font-black text-white drop-shadow-lg">{selectedPlayer}</div>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex flex-col">
-      {/* Header */}
-      <header className="bg-gradient-to-r from-blue-600 to-blue-700 px-4 py-4 shadow-xl">
-        <div className="flex justify-between items-center">
-          <div className="text-white">
-            <h1 className="text-2xl font-bold">EventPad</h1>
-            <p className="text-blue-100 text-sm">Captura de Datos de Balonmano</p>
+    <div
+      className={`bg-gradient-to-br ${team === "A" ? "from-blue-600 to-blue-800" : "from-amber-600 to-amber-800"} border-2 ${team === "A" ? "border-blue-400" : "border-amber-400"} rounded-lg p-2 sm:p-3 h-full flex flex-col min-h-0 shadow-lg`}
+    >
+      <div className="text-xs sm:text-sm font-bold text-white uppercase tracking-wide flex items-center gap-2 px-1 shrink-0 mb-2">
+        <Trophy className="w-4 h-4" /> {teamName}
+      </div>
+      <div className="grid grid-cols-3 sm:grid-cols-4 gap-1 sm:gap-2 overflow-y-auto pb-2 pr-1 custom-scrollbar flex-1 content-start min-h-0">
+        {players.map((player) => (
+          <Button
+            key={player.number}
+            onClick={() => {
+              console.log("[v0] Player selected:", player.number)
+              onPlayerSelect(player.number)
+            }}
+            className={`h-12 sm:h-14 md:h-16 flex flex-col justify-center items-center font-bold text-lg sm:text-xl rounded-lg transition-all active:scale-95 shadow-md ${
+              team === "A"
+                ? "bg-blue-500 hover:bg-blue-400 text-white border-2 border-blue-300"
+                : "bg-amber-500 hover:bg-amber-400 text-white border-2 border-amber-300"
+            }`}
+          >
+            {player.number}
+            {player.isGoalkeeper && <span className="text-[8px] mt-0.5">GK</span>}
+          </Button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+const ActionsPanel = ({
+  selectedPlayer,
+  selectedTeam,
+  isGoalkeeper,
+  onBack,
+  onActionSelect,
+  events,
+}: {
+  selectedPlayer: number | null
+  selectedTeam: "A" | "B" | null
+  isGoalkeeper: boolean
+  onBack: () => void
+  onActionSelect: (action: string) => void
+  events: Event[]
+}) => {
+  const [step, setStep] = useState<"actions" | "details">("actions")
+  const [selectedAction, setSelectedAction] = useState<string | null>(null)
+  const [selectedDefense, setSelectedDefense] = useState<string>("")
+  const [selectedZone, setSelectedZone] = useState<number | null>(null)
+  const [selectedCourtZone, setSelectedCourtZone] = useState<string>("")
+  const [selectedContext, setSelectedContext] = useState<string[]>([])
+
+  if (!selectedPlayer) {
+    return (
+      <div className="bg-gradient-to-br from-slate-700 to-slate-800 border-2 border-slate-600 rounded-lg p-4 sm:p-6 h-full flex flex-col items-center justify-center text-center shadow-lg">
+        <Shield className="w-16 h-16 sm:w-20 sm:h-20 text-slate-500 opacity-50 mb-3" />
+        <p className="text-slate-300 text-sm sm:text-base font-medium">
+          Selecciona un jugador para registrar una acción
+        </p>
+      </div>
+    )
+  }
+
+  const handleConfirm = () => {
+    if (selectedAction && selectedDefense && selectedCourtZone && selectedZone) {
+      console.log("[v0] Action confirmed:", {
+        player: selectedPlayer,
+        action: selectedAction,
+        defense: selectedDefense,
+        courtZone: selectedCourtZone,
+        zone: selectedZone,
+      })
+      // Reset states
+      setStep("actions")
+      setSelectedAction(null)
+      setSelectedDefense("")
+      setSelectedZone(null)
+      setSelectedCourtZone("")
+      onBack()
+    }
+  }
+
+  return (
+    <div className="bg-gradient-to-br from-slate-700 to-slate-800 border-2 border-slate-600 rounded-lg p-3 sm:p-4 h-full flex flex-col shadow-lg">
+      {step === "actions" ? (
+        <>
+          <div className="flex justify-between items-center mb-3 pb-2 border-b border-slate-600 shrink-0">
+            <Button variant="ghost" size="sm" onClick={onBack} className="text-slate-300 hover:text-white -ml-2">
+              <ArrowLeft className="w-4 h-4 mr-1" /> Atrás
+            </Button>
+            <span className="text-white font-bold">Jugador #{selectedPlayer}</span>
           </div>
-          <div className="text-right text-white">
-            <div className="text-sm text-blue-100">Partido en Vivo</div>
-            <div className="text-3xl font-bold font-mono">
-              {localScore} - {visitorScore}
+
+          <div className="grid grid-cols-2 gap-2 sm:gap-3 flex-1 overflow-y-auto pb-4 custom-scrollbar min-h-0">
+            {!isGoalkeeper ? (
+              <>
+                <Button
+                  className="h-16 sm:h-20 bg-green-600 hover:bg-green-500 text-white font-bold col-span-2"
+                  onClick={() => {
+                    setSelectedAction("GOL")
+                    setStep("details")
+                  }}
+                >
+                  GOL
+                </Button>
+                <Button
+                  className="h-14 sm:h-16 bg-blue-600 hover:bg-blue-500 text-white font-bold"
+                  onClick={() => {
+                    setSelectedAction("PARADA")
+                    setStep("details")
+                  }}
+                >
+                  PARADA
+                </Button>
+                <Button
+                  className="h-14 sm:h-16 bg-yellow-600 hover:bg-yellow-500 text-white font-bold"
+                  onClick={() => {
+                    setSelectedAction("FUERA")
+                    setStep("details")
+                  }}
+                >
+                  FUERA
+                </Button>
+                <Button
+                  className="h-12 bg-slate-600 hover:bg-slate-500 text-white col-span-2"
+                  onClick={() => {
+                    setSelectedAction("TIRO")
+                    setStep("details")
+                  }}
+                >
+                  TIRO
+                </Button>
+                <Button
+                  className="h-12 bg-red-600 hover:bg-red-500 text-white col-span-2"
+                  onClick={() => {
+                    setSelectedAction("PÉRDIDA")
+                    setStep("details")
+                  }}
+                >
+                  PÉRDIDA
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button
+                  className="h-16 sm:h-20 bg-blue-600 hover:bg-blue-500 text-white font-bold col-span-2"
+                  onClick={() => {
+                    setSelectedAction("PARADA")
+                    setStep("details")
+                  }}
+                >
+                  PARADA
+                </Button>
+                <Button
+                  className="h-16 sm:h-20 bg-red-600 hover:bg-red-500 text-white font-bold col-span-2"
+                  onClick={() => {
+                    setSelectedAction("GOL ENCAJADO")
+                    setStep("details")
+                  }}
+                >
+                  GOL ENCAJADO
+                </Button>
+              </>
+            )}
+          </div>
+        </>
+      ) : (
+        <>
+          <div className="flex justify-between items-center mb-3 pb-2 border-b border-slate-600 shrink-0">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setStep("actions")}
+              className="text-slate-300 hover:text-white -ml-2"
+            >
+              <ArrowLeft className="w-4 h-4" />
+            </Button>
+            <span className="text-green-400 font-bold">{selectedAction}</span>
+          </div>
+
+          <div className="flex-1 overflow-y-auto space-y-3 pb-20 custom-scrollbar min-h-0 pr-2">
+            {/* Defensa Rival */}
+            <div className="bg-slate-800 p-2 sm:p-3 rounded-lg border border-slate-600">
+              <div className="text-[10px] font-bold text-slate-400 mb-2 uppercase tracking-wider">Defensa Rival</div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {DEFENSE_TYPES.map((def) => (
+                  <Button
+                    key={def}
+                    size="sm"
+                    variant={selectedDefense === def ? "default" : "outline"}
+                    className={`text-[10px] sm:text-xs h-8 sm:h-10 ${selectedDefense === def ? "bg-indigo-600 text-white" : "bg-slate-700 border-slate-600 text-slate-300"}`}
+                    onClick={() => setSelectedDefense(def)}
+                  >
+                    {def}
+                  </Button>
+                ))}
+              </div>
+            </div>
+
+            {/* Zona de Acción */}
+            <div className="bg-slate-800 p-2 sm:p-3 rounded-lg border border-slate-600">
+              <div className="text-[10px] font-bold text-slate-400 mb-2 uppercase tracking-wider">Zona de Acción</div>
+              <div className="grid grid-cols-3 gap-2">
+                {COURT_ZONES.map((z, i) => (
+                  <Button
+                    key={z}
+                    size="sm"
+                    variant={selectedCourtZone === z ? "default" : "outline"}
+                    className={`h-8 sm:h-10 text-[9px] sm:text-xs leading-tight ${selectedCourtZone === z ? "bg-blue-600 text-white" : "bg-slate-700 border-slate-600 text-slate-300"}`}
+                    onClick={() => setSelectedCourtZone(z)}
+                  >
+                    {z}
+                  </Button>
+                ))}
+              </div>
+            </div>
+
+            {/* Zona de Portería */}
+            <div className="bg-slate-800 p-2 sm:p-3 rounded-lg border border-slate-600">
+              <div className="text-[10px] font-bold text-slate-400 mb-2 uppercase tracking-wider">Zona de Portería</div>
+              <div className="aspect-square max-w-[150px] sm:max-w-[180px] mx-auto grid grid-cols-3 gap-1 bg-slate-900 p-1 rounded">
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((z) => (
+                  <Button
+                    key={z}
+                    variant="ghost"
+                    className={`h-full font-bold text-sm rounded-sm transition-all ${selectedZone === z ? "bg-green-500 text-white" : "bg-slate-800 text-slate-400"}`}
+                    onClick={() => setSelectedZone(z)}
+                  >
+                    {z}
+                  </Button>
+                ))}
+              </div>
             </div>
           </div>
-        </div>
-      </header>
 
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col gap-4 p-4 overflow-hidden">
-        {/* Cronómetro y Control Central */}
-        <div className="bg-slate-800 rounded-xl p-6 shadow-xl text-center">
-          <div className="text-sm text-slate-400 mb-2">CRONÓMETRO</div>
-          <div className="text-6xl font-mono font-bold text-green-400 mb-4">{formatTime(time)}</div>
-          <div className="flex gap-3 justify-center">
-            {/* Controles de tiempo */}
+          <div className="absolute bottom-3 left-3 right-3 z-10">
             <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => setIsRunning(!isRunning)}
-              className={`mt-1 h-6 text-[10px] sm:text-xs uppercase tracking-widest font-bold ${isRunning ? "text-red-400 hover:text-red-300 hover:bg-red-950/30" : "text-green-400 hover:text-green-300 hover:bg-green-950/30"}`}
+              size="lg"
+              className="w-full bg-green-600 hover:bg-green-500 text-white font-bold"
+              onClick={handleConfirm}
+              disabled={!selectedDefense || !selectedCourtZone || !selectedZone}
             >
-              {isRunning ? (
-                <span className="flex items-center gap-1">
-                  <Pause className="w-3 h-3" /> Pausar
-                </span>
-              ) : (
-                <span className="flex items-center gap-1">
-                  <Play className="w-3 h-3" /> Iniciar
-                </span>
-              )}
+              CONFIRMAR
             </Button>
           </div>
+        </>
+      )}
+    </div>
+  )
+}
+
+// --- PÁGINA PRINCIPAL ---
+export default function EventPadPage() {
+  const [time, setTime] = useState(0)
+  const [isRunning, setIsRunning] = useState(false)
+  const [events, setEvents] = useState<Event[]>([])
+  const [selectedPlayerA, setSelectedPlayerA] = useState<number | null>(null)
+  const [selectedPlayerB, setSelectedPlayerB] = useState<number | null>(null)
+  const [localScore, setLocalScore] = useState(0)
+  const [visitorScore, setVisitorScore] = useState(0)
+
+  // Cronómetro
+  useEffect(() => {
+    let interval: NodeJS.Timeout | null = null
+    if (isRunning) {
+      interval = setInterval(() => setTime((t) => t + 1), 1000)
+    }
+    return () => {
+      if (interval) clearInterval(interval)
+    }
+  }, [isRunning])
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60)
+    const secs = seconds % 60
+    return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`
+  }
+
+  const getSelectedPlayer = () => {
+    if (selectedPlayerA !== null) {
+      return PLAYERS_A.find((p) => p.number === selectedPlayerA)
+    }
+    if (selectedPlayerB !== null) {
+      return PLAYERS_B.find((p) => p.number === selectedPlayerB)
+    }
+    return null
+  }
+
+  const handlePlayerSelect = (team: "A" | "B", number: number) => {
+    console.log("[v0] Selecting player:", team, number)
+    if (team === "A") {
+      setSelectedPlayerA(selectedPlayerA === number ? null : number)
+      setSelectedPlayerB(null)
+    } else {
+      setSelectedPlayerB(selectedPlayerB === number ? null : number)
+      setSelectedPlayerA(null)
+    }
+  }
+
+  const handleClearSelection = () => {
+    console.log("[v0] Clearing selection")
+    setSelectedPlayerA(null)
+    setSelectedPlayerB(null)
+  }
+
+  return (
+    <div className="flex flex-col h-screen w-full bg-slate-950 text-white overflow-hidden">
+      {/* Header */}
+      <HeaderScoreboard
+        localScore={localScore}
+        visitorScore={visitorScore}
+        teamAName="Local"
+        teamBName="Visitante"
+        time={time}
+        isRunning={isRunning}
+        setIsRunning={setIsRunning}
+        formatTime={formatTime}
+      />
+
+      {/* Contenedor principal responsive */}
+      <div className="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3 p-2 sm:p-3 overflow-hidden min-h-0">
+        {/* Panel Izquierdo - Equipo Local */}
+        <div className="min-h-0 min-w-0">
+          <PlayerNumbersPanel
+            team="A"
+            players={PLAYERS_A}
+            selectedPlayer={selectedPlayerA}
+            onPlayerSelect={(number) => handlePlayerSelect("A", number)}
+            teamName="Equipo A"
+          />
         </div>
 
-        {/* Contenedor principal con dos columnas laterales y centro */}
-        <div className="flex-1 grid grid-cols-3 gap-4 min-h-0 overflow-hidden">
-          {/* Panel Izquierdo - Equipo Local */}
-          <div className="flex flex-col gap-4">
-            <PlayerNumbersPanel
-              players={teamAPlayers}
-              selectedPlayer={selectedPlayerA}
-              onPlayerSelect={(num) => handlePlayerSelect("A", num)}
-              teamLabel="EQUIPO LOCAL"
-              teamColor="from-blue-600 to-blue-700"
-            />
-            <ActionsPanel selectedPlayer={selectedPlayerA} isGoalkeeper={false} onActionSelect={handleActionSelect} />
-          </div>
-
-          {/* Centro - Portería y Visualización */}
-          <div className="flex flex-col gap-4">
-            <CourtVisualization events={events} />
-            <OpponentGoalStats events={events} />
-          </div>
-
-          {/* Panel Derecho - Equipo Visitante */}
-          <div className="flex flex-col gap-4">
-            <PlayerNumbersPanel
-              players={teamBPlayers}
-              selectedPlayer={selectedPlayerB}
-              onPlayerSelect={(num) => handlePlayerSelect("B", num)}
-              teamLabel="EQUIPO VISITANTE"
-              teamColor="from-amber-600 to-amber-700"
-            />
-            <ActionsPanel selectedPlayer={selectedPlayerB} isGoalkeeper={false} onActionSelect={handleActionSelect} />
-          </div>
+        {/* Panel Central - Acciones */}
+        <div className="min-h-0 min-w-0 hidden sm:block">
+          <ActionsPanel
+            selectedPlayer={selectedPlayerA || selectedPlayerB}
+            selectedTeam={selectedPlayerA ? "A" : selectedPlayerB ? "B" : null}
+            isGoalkeeper={getSelectedPlayer()?.isGoalkeeper || false}
+            onBack={handleClearSelection}
+            onActionSelect={() => {}}
+            events={events}
+          />
         </div>
 
-        {/* Historial de Eventos */}
-        <div className="bg-slate-800 rounded-xl p-4 shadow-xl max-h-24 overflow-y-auto">
-          <div className="text-xs text-slate-400 mb-2 font-bold">ÚLTIMOS EVENTOS</div>
-          <div className="flex gap-2 flex-wrap">
-            {events.slice(-5).map((event, idx) => (
-              <div key={idx} className="bg-slate-700 px-3 py-1 rounded text-xs text-slate-200">
-                {event.action} - #{event.player}
-              </div>
-            ))}
-          </div>
+        {/* Panel Derecho - Equipo Visitante */}
+        <div className="min-h-0 min-w-0">
+          <PlayerNumbersPanel
+            team="B"
+            players={PLAYERS_B}
+            selectedPlayer={selectedPlayerB}
+            onPlayerSelect={(number) => handlePlayerSelect("B", number)}
+            teamName="Equipo B"
+          />
         </div>
       </div>
+
+      {/* Panel Central en móvil */}
+      {(selectedPlayerA !== null || selectedPlayerB !== null) && (
+        <div className="sm:hidden p-2 bg-slate-900 border-t border-slate-800 max-h-96 overflow-y-auto">
+          <ActionsPanel
+            selectedPlayer={selectedPlayerA || selectedPlayerB}
+            selectedTeam={selectedPlayerA ? "A" : selectedPlayerB ? "B" : null}
+            isGoalkeeper={getSelectedPlayer()?.isGoalkeeper || false}
+            onBack={handleClearSelection}
+            onActionSelect={() => {}}
+            events={events}
+          />
+        </div>
+      )}
     </div>
   )
 }
