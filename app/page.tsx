@@ -2,15 +2,14 @@
 
 import { useState, useEffect, useMemo } from "react"
 import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogTrigger, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogTrigger, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { useIsMobile } from "@/hooks/use-mobile"
 import {
   Pause, Play, ArrowLeft, Trophy, History, Settings, Edit3, Target, Shield, Maximize2, Filter,
-  CheckCircle2, XCircle
+  CheckCircle2, Trash2, Plus
 } from "lucide-react"
 import { HistoryPanel } from "@/components/history-panel"
 
@@ -34,7 +33,7 @@ type Event = {
   courtZone?: string
   goalZone?: number
   defenseAtMoment?: DefenseType
-  context?: string[] // "Superioridad", "Inferioridad", "Contraataque"
+  context?: string[]
 }
 
 type WizardState = "IDLE" | "ACTION_SELECTION" | "DETAILS"
@@ -49,7 +48,6 @@ const CONTEXTS = ["Superioridad", "Inferioridad", "Contraataque"]
 
 // --- COMPONENTES AUXILIARES ---
 
-// 1. HEADER MARCADOR (Con corrección Local Izq / Visitante Der)
 const HeaderScoreboard = ({ localScore, visitorScore, teamAName, teamBName, time, isRunning, setIsRunning, formatTime, defenseA, defenseB }: any) => (
   <div className="bg-slate-900 border-b border-slate-800 px-6 py-2 flex items-center justify-between shadow-md shrink-0 z-30 relative h-20 box-border">
     {/* Equipo Local (A) - Izquierda */}
@@ -93,7 +91,6 @@ const HeaderScoreboard = ({ localScore, visitorScore, teamAName, teamBName, time
   </div>
 )
 
-// 2. GRID DE JUGADORES
 const PlayerGrid = ({ team, players, selectedPlayerA, selectedPlayerB, handlePlayerSelect, teamName }: any) => (
   <div className="bg-slate-900 border border-slate-800 rounded-lg p-2 h-full flex flex-col min-h-0 shadow-sm">
     <div className={`text-xs font-bold mb-2 uppercase tracking-wide flex items-center gap-2 px-1 shrink-0 ${team === "A" ? "text-blue-400" : "text-amber-400"}`}>
@@ -117,13 +114,12 @@ const PlayerGrid = ({ team, players, selectedPlayerA, selectedPlayerB, handlePla
   </div>
 )
 
-// 3. TABLA DE ESTADÍSTICAS CENTRAL (Extendida)
 const StatsTable = ({ events, teamAName, teamBName }: { events: Event[], teamAName: string, teamBName: string }) => {
     const stats = useMemo(() => {
         const calculate = (team: "A" | "B") => ({
             goals: events.filter(e => e.team === team && e.action.startsWith("GOL")).length,
             shots: events.filter(e => e.team === team && (e.action.startsWith("GOL") || e.action === "PARADA" || e.action === "FUERA" || e.action === "POSTE")).length,
-            saves: events.filter(e => e.team === team && e.action === "PARADA").length, // Asumiendo que la acción PARADA se registra al portero que la hace
+            saves: events.filter(e => e.team === team && e.action === "PARADA").length,
             turnovers: events.filter(e => e.team === team && e.action === "PÉRDIDA").length,
             goals7m: events.filter(e => e.team === team && e.action === "GOL 7M").length,
             goalsSup: events.filter(e => e.team === team && e.action.startsWith("GOL") && e.context?.includes("Superioridad")).length,
@@ -151,7 +147,6 @@ const StatsTable = ({ events, teamAName, teamBName }: { events: Event[], teamANa
                 <div className="flex-1 text-center text-amber-700 truncate px-1">{teamBName}</div>
             </div>
 
-            {/* Marcador Grande */}
             <div className="flex items-center justify-around px-4 py-1 border-b border-slate-300 bg-slate-50/50">
                 <span className="text-3xl font-black text-blue-600">{stats.A.goals}</span>
                  <div className="flex flex-col items-center text-[9px] text-slate-400 font-bold relative top-1">
@@ -173,13 +168,15 @@ const StatsTable = ({ events, teamAName, teamBName }: { events: Event[], teamANa
     )
 }
 
-// 4. PORTERÍA AVANZADA (Mapa de Calor + Filtros + Detalle Jugador)
+// 4. PORTERÍA AVANZADA (MODIFICADO: SOLO TIROS VISITANTES)
 const PorteriaAdvanced = ({ events }: { events: Event[] }) => {
   const [filter, setFilter] = useState<"ALL" | "WING" | "7M">("ALL");
 
-  // Filtrar eventos relevantes (tiros a puerta con zona definida)
+  // FILTRO SOLO EQUIPO B (VISITANTE)
   const relevantShots = useMemo(() => {
     return events.filter(e => {
+      if (e.team !== "B") return false; // <--- AQUÍ ESTÁ EL CAMBIO CLAVE: SOLO VISITANTES
+
       if (!e.goalZone) return false;
       const isShot = ["GOL", "GOL 7M", "PARADA", "BLOCADO"].some(act => e.action.startsWith(act));
       if (!isShot) return false;
@@ -191,38 +188,33 @@ const PorteriaAdvanced = ({ events }: { events: Event[] }) => {
     });
   }, [events, filter]);
 
-  // Calcular mapa de calor (máximo de goles en una zona para la escala de color)
   const heatmapScale = useMemo(() => {
       const goalsPerZone = GOAL_ZONES.map(z => relevantShots.filter(s => s.goalZone === z && s.action.startsWith("GOL")).length);
-      const maxGoals = Math.max(...goalsPerZone, 1); // Evitar división por cero
+      const maxGoals = Math.max(...goalsPerZone, 1); 
       return { goalsPerZone, maxGoals };
   }, [relevantShots]);
 
 
   const getHeatmapColor = (zoneIndex: number) => {
       const goals = heatmapScale.goalsPerZone[zoneIndex];
-      const intensity = goals / heatmapScale.maxGoals; // 0 a 1
-      // Interpolación simple de rojo. Más goles = más opaco y rojo brillante.
-      if (goals === 0) return "rgba(30, 41, 59, 0.5)"; // Slate-800 transparente
-      return `rgba(220, 38, 38, ${0.3 + (intensity * 0.5)})`; // Red-600 con opacidad variable
+      const intensity = goals / heatmapScale.maxGoals;
+      if (goals === 0) return "rgba(30, 41, 59, 0.5)"; 
+      return `rgba(220, 38, 38, ${0.3 + (intensity * 0.5)})`; 
   }
 
   return (
     <div className="w-full h-full flex flex-col bg-slate-900 rounded-lg border border-slate-800 overflow-hidden shadow-sm">
-      {/* Filtros Superior */}
       <div className="flex p-1 bg-slate-950 border-b border-slate-800 gap-1 shrink-0">
         <Button variant="ghost" size="sm" onClick={() => setFilter("ALL")} className={`flex-1 text-[9px] h-7 font-bold uppercase ${filter === "ALL" ? "bg-slate-800 text-white" : "text-slate-400"}`}>Todos</Button>
         <Button variant="ghost" size="sm" onClick={() => setFilter("WING")} className={`flex-1 text-[9px] h-7 font-bold uppercase ${filter === "WING" ? "bg-slate-800 text-white" : "text-slate-400"}`}>Extremos</Button>
         <Button variant="ghost" size="sm" onClick={() => setFilter("7M")} className={`flex-1 text-[9px] h-7 font-bold uppercase ${filter === "7M" ? "bg-slate-800 text-white" : "text-slate-400"}`}>7m</Button>
       </div>
 
-      <div className="text-[10px] text-slate-400 py-1 text-center font-bold uppercase tracking-widest shrink-0 flex items-center justify-center gap-2">
-        <Target className="w-3 h-3" /> Mapa de Tiros {filter !== "ALL" && `(${filter})`}
+      <div className="text-[10px] text-amber-400 py-1 text-center font-bold uppercase tracking-widest shrink-0 flex items-center justify-center gap-2">
+        <Target className="w-3 h-3" /> Tiros Visitantes {filter !== "ALL" && `(${filter})`}
       </div>
 
-      {/* Grid de la Portería */}
       <div className="flex-1 grid grid-cols-3 gap-0.5 p-1 min-h-0 relative">
-        {/* Postes visuales (opcional, para dar contexto) */}
         <div className="absolute inset-y-1 left-0 w-1 bg-slate-600 rounded-l pointer-events-none"></div>
         <div className="absolute inset-y-1 right-0 w-1 bg-slate-600 rounded-r pointer-events-none"></div>
         <div className="absolute inset-x-1 top-0 h-1 bg-slate-600 rounded-t pointer-events-none"></div>
@@ -237,8 +229,7 @@ const PorteriaAdvanced = ({ events }: { events: Event[] }) => {
             >
               <span className="absolute top-0.5 left-0.5 text-[7px] text-slate-500/50 pointer-events-none">{z}</span>
               
-              {/* Renderizar marcadores de tiro individuales */}
-              {shotsInZone.slice(0, 9).map(shot => { // Limitar a 9 para no saturar
+              {shotsInZone.slice(0, 9).map(shot => {
                   const isGoal = shot.action.startsWith("GOL");
                   return (
                     <div key={shot.id} className={`w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-black border ${isGoal ? 'bg-green-500 text-black border-green-300 shadow-[0_0_5px_rgba(34,197,94,0.5)]' : 'bg-red-500 text-white border-red-300'} `} title={`${shot.action} - Jugador ${shot.player}`}>
@@ -252,22 +243,19 @@ const PorteriaAdvanced = ({ events }: { events: Event[] }) => {
         })}
       </div>
       <div className="flex justify-center gap-4 pb-1 text-[8px] text-slate-400 shrink-0 bg-slate-950/50">
-          <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-green-500"></div> Gol</div>
+          <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-green-500"></div> Gol (Vis)</div>
           <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-red-500"></div> Fallo/Parada</div>
       </div>
     </div>
   )
 }
 
-
-// 5. WIZARD DE ACCIÓN (Actualizado con 7m y Contextos)
 const ActionWizard = ({
   wizardState, activePlayer, isGoalkeeper, handleBack, currentAction, handleActionSelect,
   selectedContext, toggleContext, confirmEvent,
   selectedCourtZone, setSelectedCourtZone, selectedGoalZone, setSelectedGoalZone
 }: any) => (
   <div className="bg-slate-900 border border-slate-700 rounded-xl p-3 h-full flex flex-col relative overflow-hidden shadow-2xl min-h-0">
-    {/* HEADER WIZARD */}
     <div className="flex justify-between items-center mb-2 pb-2 border-b border-slate-700 shrink-0">
         {wizardState !== "ACTION_SELECTION" && (
             <Button variant="ghost" size="sm" onClick={handleBack} className="-ml-2 text-slate-400 hover:text-white h-8 w-8 p-0">
@@ -284,7 +272,6 @@ const ActionWizard = ({
         </div>
     </div>
 
-    {/* PASO 1: SELECCIÓN DE ACCIÓN */}
     {wizardState === "ACTION_SELECTION" && (
       <div className="flex-1 grid grid-cols-2 gap-2 content-start overflow-y-auto custom-scrollbar p-1 animate-in fade-in zoom-in-95">
            {!isGoalkeeper ? (
@@ -303,12 +290,10 @@ const ActionWizard = ({
       </div>
     )}
 
-    {/* PASO 2: DETALLES (Zona, Contexto) */}
     {wizardState === "DETAILS" && (
       <div className="flex-1 flex flex-col h-full animate-in slide-in-from-right-10 overflow-hidden pb-14">
         <div className="flex-1 overflow-y-auto space-y-3 p-1 custom-scrollbar">
 
-          {/* Contexto Táctico (Superioridad, etc) - Para Goles */}
           {currentAction.startsWith("GOL") && (
               <div className="bg-slate-950/80 p-2 rounded-lg border border-slate-800/50">
                 <div className="text-[9px] font-bold text-slate-500 mb-1.5 uppercase tracking-widest flex items-center gap-1"><Filter className="w-3 h-3"/> Contexto Táctico</div>
@@ -327,7 +312,6 @@ const ActionWizard = ({
               </div>
           )}
 
-          {/* Zona de Lanzamiento (Si no es 7m) */}
           {!currentAction.includes("7M") && ["GOL", "PARADA", "FUERA", "PÉRDIDA"].includes(currentAction) && (
             <div className="bg-slate-950/80 p-2 rounded-lg border border-slate-800/50">
               <div className="text-[9px] font-bold text-slate-500 mb-1.5 uppercase tracking-widest">Zona Origen</div>
@@ -344,7 +328,6 @@ const ActionWizard = ({
             </div>
           )}
 
-          {/* Zona Portería (Para Tiros) */}
           {(currentAction.startsWith("GOL") || ["PARADA", "FUERA", "FALLO 7M"].includes(currentAction)) && (
             <div className="bg-slate-950/80 p-2 rounded-lg border border-slate-800/50 flex flex-col items-center">
               <div className="text-[9px] font-bold text-slate-500 mb-1.5 uppercase tracking-widest">Zona Definición</div>
@@ -362,7 +345,6 @@ const ActionWizard = ({
           )}
         </div>
 
-        {/* Botón Confirmar Flotante */}
         <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-slate-900 via-slate-900 to-transparent">
           <Button size="lg" className="w-full h-11 bg-green-600 hover:bg-green-500 text-white shadow-xl font-black tracking-[0.15em] text-base uppercase border-t border-green-400/20 transition-transform active:scale-[0.98]" onClick={confirmEvent}>
             CONFIRMAR <CheckCircle2 className="w-5 h-5 ml-2 animate-pulse"/>
@@ -373,39 +355,32 @@ const ActionWizard = ({
   </div>
 )
 
-
-// --- COMPONENTE PRINCIPAL (LAYOUT GLOBAL) ---
-
 export default function MatchView() {
   const [appState, setAppState] = useState<AppState>("SETUP")
 
-  // Estado de los equipos y configuración inicial
   const [teamAName, setTeamAName] = useState("Local A")
   const [teamBName, setTeamBName] = useState("Visitante B")
   const [defenseA, setDefenseA] = useState<DefenseType>("6:0")
   const [defenseB, setDefenseB] = useState<DefenseType>("6:0")
-  const [teamAPlayers, setTeamAPlayers] = useState<Player[]>(Array.from({ length: 14 }, (_, i) => ({ number: i + 1, name: `Jugador A${i + 1}`, isGoalkeeper: i === 0 || i === 12 })))
-  const [teamBPlayers, setTeamBPlayers] = useState<Player[]>(Array.from({ length: 14 }, (_, i) => ({ number: i + 1, name: `Jugador B${i + 1}`, isGoalkeeper: i === 0 || i === 12 })))
+  // INICIALIZADO A 16 JUGADORES (Se pueden borrar luego)
+  const [teamAPlayers, setTeamAPlayers] = useState<Player[]>(Array.from({ length: 16 }, (_, i) => ({ number: i + 1, name: `Jugador A${i + 1}`, isGoalkeeper: i === 0 || i === 12 })))
+  const [teamBPlayers, setTeamBPlayers] = useState<Player[]>(Array.from({ length: 16 }, (_, i) => ({ number: i + 1, name: `Jugador B${i + 1}`, isGoalkeeper: i === 0 || i === 12 })))
 
-  // Estado del partido
   const [localScore, setLocalScore] = useState(0)
   const [visitorScore, setVisitorScore] = useState(0)
   const [time, setTime] = useState(0)
   const [isRunning, setIsRunning] = useState(false)
   const [events, setEvents] = useState<Event[]>([])
 
-  // Estado de interacción (Selección, Wizard)
   const [selectedPlayerA, setSelectedPlayerA] = useState<number | null>(null)
   const [selectedPlayerB, setSelectedPlayerB] = useState<number | null>(null)
   const [wizardState, setWizardState] = useState<WizardState>("IDLE")
   const [currentAction, setCurrentAction] = useState<string | null>(null)
   
-  // Estado de detalles de acción
   const [selectedCourtZone, setSelectedCourtZone] = useState<string | null>(null)
   const [selectedGoalZone, setSelectedGoalZone] = useState<number | null>(null)
   const [selectedContext, setSelectedContext] = useState<string[]>([])
 
-  // Cronómetro
   useEffect(() => {
     let interval: NodeJS.Timeout
     if (isRunning) interval = setInterval(() => setTime((prev) => prev + 1), 1000)
@@ -417,8 +392,6 @@ export default function MatchView() {
     const secs = (seconds % 60).toString().padStart(2, "0")
     return `${mins}:${secs}`
   }
-
-  // --- LÓGICA DE INTERACCIÓN ---
 
   const getActivePlayerInfo = () => {
     if (selectedPlayerA) return { team: "A" as const, player: selectedPlayerA, isGK: teamAPlayers.find(p=>p.number===selectedPlayerA)?.isGoalkeeper }
@@ -435,7 +408,6 @@ export default function MatchView() {
 
   const handleActionSelect = (action: string) => {
     setCurrentAction(action)
-    // Acciones que requieren detalles extra
     if (action.includes("GOL") || action.includes("PARADA") || action === "FUERA" || action === "PÉRDIDA") {
       setWizardState("DETAILS")
     } else {
@@ -457,7 +429,7 @@ export default function MatchView() {
       player: info.player, team: info.team, action: action,
       courtZone: selectedCourtZone || undefined, goalZone: selectedGoalZone || undefined,
       context: selectedContext.length > 0 ? selectedContext : undefined,
-      defenseAtMoment: info.team === "A" ? defenseB : defenseA // Se guarda la defensa RIVAL en ese momento
+      defenseAtMoment: info.team === "A" ? defenseB : defenseA 
     }
 
     setEvents(prev => [newEvent, ...prev])
@@ -478,7 +450,7 @@ export default function MatchView() {
       setEvents(prev=>prev.slice(1));
   }
 
-  // --- PANTALLA DE CONFIGURACIÓN (SETUP) ---
+  // --- SETUP COLUMN (CON AÑADIR Y ELIMINAR) ---
   if (appState === "SETUP") {
     const SetupTeamColumn = ({ team, name, setName, defense, setDefense, players, setPlayers, color }: any) => {
       const [editingId, setEditingId] = useState<number | null>(null);
@@ -488,6 +460,20 @@ export default function MatchView() {
       const saveEdit = () => {
           setPlayers(players.map((p:Player) => p.number === editingId ? editData : p));
           setEditingId(null);
+      };
+      
+      // NUEVA FUNCIÓN ELIMINAR JUGADOR
+      const deletePlayer = (number: number) => {
+          setPlayers(players.filter((p:Player) => p.number !== number));
+      };
+
+      // NUEVA FUNCIÓN AÑADIR JUGADOR
+      const addPlayer = () => {
+          if (players.length >= 16) return; // Límite duro opcional
+          // Calcular nuevo número (max + 1)
+          const maxNum = players.length > 0 ? Math.max(...players.map((p:Player) => p.number)) : 0;
+          const newP = { number: maxNum + 1, name: 'Nuevo Jugador', isGoalkeeper: false };
+          setPlayers([...players, newP]);
       };
 
       return (
@@ -507,19 +493,25 @@ export default function MatchView() {
           </div>
 
           <div className="flex-1 overflow-y-auto custom-scrollbar border-t border-slate-800 pt-2">
-            <Label className="text-xs text-slate-400 mb-2 block">Jugadores</Label>
+            <div className="flex justify-between items-center mb-2">
+                <Label className="text-xs text-slate-400">Jugadores ({players.length})</Label>
+            </div>
+            
             <div className="space-y-1">
                 {players.map((p: Player) => (
                     <Dialog key={p.number} open={editingId === p.number} onOpenChange={(open) => !open && setEditingId(null)}>
                         <DialogTrigger asChild>
-                             <div onClick={() => startEdit(p)} className={`flex items-center justify-between p-2 rounded bg-slate-800/50 hover:bg-slate-800 cursor-pointer border ${color === 'blue' ? 'hover:border-blue-500/50' : 'hover:border-amber-500/50'} border-transparent transition-all group`}>
-                                <div className="flex items-center gap-2">
+                             <div className={`flex items-center justify-between p-2 rounded bg-slate-800/50 hover:bg-slate-800 border ${color === 'blue' ? 'hover:border-blue-500/50' : 'hover:border-amber-500/50'} border-transparent transition-all group`}>
+                                <div className="flex items-center gap-2 flex-1 cursor-pointer" onClick={() => startEdit(p)}>
                                     <span className={`font-bold w-6 text-center ${color === 'blue' ? 'text-blue-400' : 'text-amber-400'}`}>{p.number}</span>
-                                    <span className="text-sm">{p.name}</span>
+                                    <span className="text-sm truncate">{p.name}</span>
+                                    {p.isGoalkeeper && <Shield className="w-3 h-3 text-slate-500 ml-1" />}
                                 </div>
-                                <div className="flex items-center gap-2">
-                                    {p.isGoalkeeper && <Shield className="w-3 h-3 text-slate-500" />}
-                                    <Edit3 className="w-3 h-3 text-slate-600 group-hover:text-slate-300" />
+                                <div className="flex items-center gap-1">
+                                    <Button variant="ghost" size="icon" className="h-6 w-6 text-slate-600 hover:text-red-500" onClick={(e) => { e.stopPropagation(); deletePlayer(p.number); }}>
+                                        <Trash2 className="w-3 h-3" />
+                                    </Button>
+                                    <Edit3 className="w-3 h-3 text-slate-600 group-hover:text-slate-300 cursor-pointer" onClick={() => startEdit(p)}/>
                                 </div>
                             </div>
                         </DialogTrigger>
@@ -547,6 +539,11 @@ export default function MatchView() {
                     </Dialog>
                 ))}
             </div>
+            
+            <Button variant="outline" size="sm" onClick={addPlayer} className="w-full mt-3 border-dashed border-slate-700 text-slate-400 hover:text-white hover:bg-slate-800">
+                <Plus className="w-4 h-4 mr-2"/> Añadir Jugador
+            </Button>
+
           </div>
         </div>
       );
@@ -566,28 +563,23 @@ export default function MatchView() {
     )
   }
 
-  // --- PANTALLA DE PARTIDO (MATCH) ---
-  const activeInfo = getActivePlayerInfo()
   return (
     <div className="flex flex-col h-screen bg-slate-950 text-slate-100 overflow-hidden font-sans">
       <HeaderScoreboard localScore={localScore} visitorScore={visitorScore} teamAName={teamAName} teamBName={teamBName} time={time} isRunning={isRunning} setIsRunning={setIsRunning} formatTime={formatTime} defenseA={defenseA} defenseB={defenseB}/>
 
       <div className="flex-1 p-3 w-full h-full min-h-0 overflow-hidden relative">
-        {/* Layout Principal: 3 Columnas */}
         <div className="grid grid-cols-[28%_1fr_28%] gap-3 h-full w-full max-w-[1920px] mx-auto min-h-0 relative z-10">
 
-          {/* COLUMNA IZQUIERDA: LOCAL (A) */}
           <div className="flex flex-col gap-3 h-full min-h-0 relative">
             {selectedPlayerA ? (
                 <div className="h-full animate-in slide-in-from-right-4 duration-200">
-                <ActionWizard wizardState={wizardState} activePlayer={activeInfo} isGoalkeeper={activeInfo?.isGK} handleBack={handleBack} currentAction={currentAction} handleActionSelect={handleActionSelect} selectedContext={selectedContext} toggleContext={toggleContext} confirmEvent={() => confirmEvent()} selectedCourtZone={selectedCourtZone} setSelectedCourtZone={setSelectedCourtZone} selectedGoalZone={selectedGoalZone} setSelectedGoalZone={setSelectedGoalZone} />
+                <ActionWizard wizardState={wizardState} activePlayer={getActivePlayerInfo()} isGoalkeeper={getActivePlayerInfo()?.isGK} handleBack={handleBack} currentAction={currentAction} handleActionSelect={handleActionSelect} selectedContext={selectedContext} toggleContext={toggleContext} confirmEvent={() => confirmEvent()} selectedCourtZone={selectedCourtZone} setSelectedCourtZone={setSelectedCourtZone} selectedGoalZone={selectedGoalZone} setSelectedGoalZone={setSelectedGoalZone} />
                 </div>
             ) : (
                 <PlayerGrid team="A" players={teamAPlayers} selectedPlayerA={selectedPlayerA} selectedPlayerB={selectedPlayerB} handlePlayerSelect={handlePlayerSelect} teamName={teamAName} />
             )}
           </div>
 
-          {/* COLUMNA CENTRAL: ESTADÍSTICAS + PORTERÍA */}
           <div className="flex flex-col gap-3 h-full min-h-0">
             <div className="h-[45%] min-h-0 shrink-0">
                 <StatsTable events={events} teamAName={teamAName} teamBName={teamBName} />
@@ -603,12 +595,11 @@ export default function MatchView() {
             </div>
           </div>
 
-          {/* COLUMNA DERECHA: VISITANTE (B) + LIVE FEED */}
           <div className="flex flex-col gap-3 h-full min-h-0 relative">
             <div className="h-1/2 min-h-0 relative">
                 {selectedPlayerB ? (
                     <div className="h-full animate-in slide-in-from-left-4 duration-200">
-                    <ActionWizard wizardState={wizardState} activePlayer={activeInfo} isGoalkeeper={activeInfo?.isGK} handleBack={handleBack} currentAction={currentAction} handleActionSelect={handleActionSelect} selectedContext={selectedContext} toggleContext={toggleContext} confirmEvent={() => confirmEvent()} selectedCourtZone={selectedCourtZone} setSelectedCourtZone={setSelectedCourtZone} selectedGoalZone={selectedGoalZone} setSelectedGoalZone={setSelectedGoalZone} />
+                    <ActionWizard wizardState={wizardState} activePlayer={getActivePlayerInfo()} isGoalkeeper={getActivePlayerInfo()?.isGK} handleBack={handleBack} currentAction={currentAction} handleActionSelect={handleActionSelect} selectedContext={selectedContext} toggleContext={toggleContext} confirmEvent={() => confirmEvent()} selectedCourtZone={selectedCourtZone} setSelectedCourtZone={setSelectedCourtZone} selectedGoalZone={selectedGoalZone} setSelectedGoalZone={setSelectedGoalZone} />
                     </div>
                 ) : (
                     <PlayerGrid team="B" players={teamBPlayers} selectedPlayerA={selectedPlayerA} selectedPlayerB={selectedPlayerB} handlePlayerSelect={handlePlayerSelect} teamName={teamBName} />
