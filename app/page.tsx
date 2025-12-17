@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { 
-  Trophy, Play, Edit2, XCircle, Activity, History, Shield, ArrowLeft, Maximize2, Users, Target, Settings2, AlertCircle
+  Trophy, Play, Edit2, XCircle, Activity, History, Shield, ArrowLeft, Maximize2, Users, Target, Settings2
 } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 
@@ -100,7 +100,7 @@ export default function HandballTracker() {
   const [events, setEvents] = useState<Event[]>([])
   const [score, setScore] = useState({ local: 0, visitor: 0 })
   
-  // Plantillas
+  // Plantillas configurables antes del partido
   const [playersA, setPlayersA] = useState<Player[]>(Array.from({ length: 14 }, (_, i) => ({ number: i + 1, name: `Jugador ${i + 1}`, isGoalkeeper: i === 0 })))
   const [playersB, setPlayersB] = useState<Player[]>(Array.from({ length: 14 }, (_, i) => ({ number: i + 1, name: `Oponente ${i + 1}`, isGoalkeeper: i === 0 })))
   
@@ -149,7 +149,7 @@ export default function HandballTracker() {
     setDetails({ defense: "", courtZone: "", goalZone: 0, situation: "" })
   }
 
-  // --- RENDER: SETUP (AJUSTE DE ZOOM) ---
+  // --- RENDER: SETUP (AJUSTE DE PANTALLA Y ZOOM) ---
   if (gameState === "setup") {
     return (
       <div className="h-screen w-full bg-[#020617] text-slate-100 flex flex-col p-4 md:p-8 overflow-hidden">
@@ -199,7 +199,7 @@ export default function HandballTracker() {
     )
   }
 
-  // --- RENDER: MODO PARTIDO ---
+  // --- RENDER: MODO PARTIDO (DASHBOARD DINÁMICO) ---
   return (
     <div className="flex flex-col h-screen w-full bg-[#020617] text-white overflow-hidden font-sans">
       
@@ -232,27 +232,44 @@ export default function HandballTracker() {
 
       <div className="flex-1 flex gap-2 p-2 overflow-hidden min-h-0">
         
-        {/* PANEL IZQUIERDO: JUGADORES A + PORTERÍA */}
+        {/* PANEL IZQUIERDO: JUGADORES A + PORTERÍA LOCAL */}
         <div className="flex-1 flex flex-col gap-2 min-h-0 h-full">
           <div className={`flex-1 rounded-2xl border-2 border-blue-500/30 bg-blue-950/10 p-4 flex flex-col min-h-0 overflow-hidden transition-opacity ${selectedPlayer?.team === 'B' ? 'opacity-20 pointer-events-none' : 'opacity-100'}`}>
             <h2 className="font-black text-blue-400 text-xs mb-3 flex items-center gap-2 uppercase italic tracking-tighter shrink-0">
               <Trophy size={14}/> L-LOCAL
             </h2>
-            <div className="grid grid-cols-4 gap-2 overflow-y-auto custom-scrollbar flex-1 content-start">
-              {playersA.map(p => (
-                <Button key={p.number} onClick={() => {setSelectedPlayer({team:'A', number:p.number}); setWizardStep('actions')}} 
-                  className={`h-16 flex flex-col font-black rounded-xl border-b-4 shadow-lg transition-all active:scale-90 ${
-                    selectedPlayer?.number === p.number && selectedPlayer.team === 'A' 
-                    ? 'bg-white text-blue-900 border-blue-950' 
-                    : 'bg-blue-600 hover:bg-blue-500 text-white border-blue-900'
-                  }`}>
-                  <span className="text-2xl leading-none italic">{p.number}</span>
-                  <span className="text-[8px] font-bold opacity-80 truncate w-full px-1 leading-tight">{p.name}</span>
-                </Button>
-              ))}
-            </div>
+            {/* Si hay jugador seleccionado, la cuadrícula desaparece y muestra el dorsal pequeño arriba */}
+            {selectedPlayer?.team === 'A' ? (
+              <div className="flex-1 flex flex-col">
+                <div className="flex items-center gap-4 bg-white/10 p-3 rounded-xl border border-white/20 mb-4 shrink-0">
+                  <div className="bg-white text-blue-900 w-12 h-12 rounded-lg flex items-center justify-center text-3xl font-black italic shadow-inner">{selectedPlayer.number}</div>
+                  <div className="flex flex-col leading-none">
+                    <span className="text-[10px] text-white/40 font-black uppercase mb-1">Dorsal Seleccionado</span>
+                    <span className="text-blue-400 font-black text-lg uppercase italic">{playersA.find(p => p.number === selectedPlayer.number)?.name}</span>
+                  </div>
+                  <Button variant="ghost" size="sm" onClick={() => setSelectedPlayer(null)} className="ml-auto text-white/50 hover:text-white"><XCircle/></Button>
+                </div>
+                <div className="grid grid-cols-2 gap-3 flex-1 overflow-y-auto content-start pb-4">
+                  <Button className="h-20 bg-green-600 text-white font-black text-2xl col-span-2 border-b-4 border-green-800" onClick={() => {setCurrentAction('GOL'); setWizardStep('details')}}>GOL</Button>
+                  <Button className="h-16 bg-blue-600 text-white font-black text-lg border-b-4 border-blue-800" onClick={() => {setCurrentAction('PARADA'); setWizardStep('details')}}>PARADA</Button>
+                  <Button className="h-16 bg-orange-600 text-white font-black text-lg border-b-4 border-orange-800" onClick={() => {setCurrentAction('FUERA'); setWizardStep('details')}}>FUERA</Button>
+                  <Button className="h-14 bg-red-600 text-white font-black col-span-2 text-xs border-b-4 border-red-800" onClick={() => {setCurrentAction('PÉRDIDA'); setWizardStep('losses')}}>PÉRDIDA / ERROR</Button>
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-4 gap-2 overflow-y-auto custom-scrollbar flex-1 content-start">
+                {playersA.map(p => (
+                  <Button key={p.number} onClick={() => setSelectedPlayer({team:'A', number:p.number})} 
+                    className="h-16 flex flex-col font-black rounded-xl border-b-4 bg-blue-600 hover:bg-blue-500 text-white border-blue-900">
+                    <span className="text-2xl leading-none italic">{p.number}</span>
+                    <span className="text-[8px] font-bold opacity-80 truncate w-full px-1 leading-tight">{p.name}</span>
+                  </Button>
+                ))}
+              </div>
+            )}
           </div>
           
+          {/* PORTERÍA LOCAL ESTÁTICA Y AMPLIABLE */}
           <div className="h-[40%] bg-slate-900 border border-slate-700 rounded-2xl flex flex-col overflow-hidden shadow-inner shrink-0">
             <div className="bg-slate-800 p-2 flex justify-between items-center border-b border-slate-700 shrink-0">
               <span className="text-[10px] font-black text-slate-400 flex items-center gap-2 uppercase tracking-tighter italic">
@@ -267,7 +284,7 @@ export default function HandballTracker() {
                 <DialogContent className="bg-slate-950 border-slate-800 max-w-4xl aspect-video p-6 flex flex-col">
                   <DialogHeader className="mb-4">
                     <DialogTitle className="text-2xl text-white font-black italic uppercase tracking-tighter flex items-center gap-4">
-                      <Target className="text-blue-500" size={32}/> ANÁLISIS IMPACTO PORTERÍA
+                      <Target className="text-blue-500" size={32}/> ANÁLISIS IMPACTO PORTERÍA LOCAL
                     </DialogTitle>
                   </DialogHeader>
                   <div className="flex-1 min-h-0"><PorteriaStats events={events}/></div>
@@ -278,65 +295,36 @@ export default function HandballTracker() {
           </div>
         </div>
 
-        {/* PANEL CENTRAL: ACCIONES / ESTADÍSTICAS */}
+        {/* PANEL CENTRAL: ESTADÍSTICAS O DETALLES DE ACCIÓN */}
         <div className="w-full md:w-[420px] flex flex-col gap-2 min-h-0 h-full">
-          {selectedPlayer ? (
-            <div className={`flex-1 flex flex-col rounded-2xl border-2 p-5 shadow-2xl relative overflow-hidden transition-all duration-300 ${
-              selectedPlayer.team === 'A' ? 'bg-blue-950 border-blue-500' : 'bg-amber-950 border-amber-500'
-            }`}>
-              <Button variant="ghost" size="sm" className="absolute top-3 right-3 text-white/40 hover:text-white" onClick={() => setSelectedPlayer(null)}>
-                <XCircle size={24}/>
-              </Button>
-
+          {selectedPlayer && wizardStep !== 'actions' ? (
+            /* WIZARD DE DETALLES (ZONAS Y DEFENSA) */
+            <div className={`flex-1 flex flex-col rounded-2xl border-2 p-5 shadow-2xl relative overflow-hidden ${selectedPlayer.team === 'A' ? 'bg-blue-950 border-blue-500' : 'bg-amber-950 border-amber-500'}`}>
               <div className="flex items-center gap-4 bg-black/40 p-3 rounded-xl border border-white/10 mb-6 shrink-0">
-                <div className="bg-white text-slate-900 w-12 h-12 rounded-lg flex items-center justify-center text-3xl font-black italic leading-none shadow-inner">
-                  {selectedPlayer.number}
-                </div>
+                <div className="bg-white text-slate-900 w-12 h-12 rounded-lg flex items-center justify-center text-3xl font-black italic shadow-inner">{selectedPlayer.number}</div>
                 <div className="flex flex-col leading-none">
-                  <span className="text-[10px] text-white/40 font-black uppercase tracking-widest mb-1">Registrando</span>
-                  <span className="text-green-400 font-black text-2xl italic uppercase tracking-tighter">
-                    {currentAction || "SELECCIONA ACCIÓN"}
-                  </span>
+                  <span className="text-[10px] text-white/40 font-black uppercase mb-1">Registrando</span>
+                  <span className="text-green-400 font-black text-2xl italic uppercase tracking-tighter">{currentAction}</span>
                 </div>
               </div>
-
-              {wizardStep === 'actions' ? (
-                <div className="grid grid-cols-2 gap-3 flex-1 overflow-y-auto content-start pb-4 custom-scrollbar">
-                  <Button className="h-24 bg-green-600 hover:bg-green-500 text-white font-black text-3xl col-span-2 shadow-xl border-b-4 border-green-900" 
-                    onClick={() => {setCurrentAction('GOL'); setWizardStep('details')}}>GOL</Button>
-                  <Button className="h-16 bg-blue-600 hover:bg-blue-500 text-white font-black text-lg border-b-4 border-blue-900" 
-                    onClick={() => {setCurrentAction('PARADA'); setWizardStep('details')}}>PARADA</Button>
-                  <Button className="h-16 bg-orange-600 hover:bg-orange-500 text-white font-black text-lg border-b-4 border-orange-900" 
-                    onClick={() => {setCurrentAction('FUERA'); setWizardStep('details')}}>FUERA</Button>
-                  <Button className="h-14 bg-red-600 hover:bg-red-500 text-white font-black col-span-2 text-xs border-b-4 border-red-900" 
-                    onClick={() => {setCurrentAction('PÉRDIDA'); setWizardStep('losses')}}>PÉRDIDA / ERROR</Button>
-                </div>
-              ) : wizardStep === 'losses' ? (
-                <div className="flex-1 flex flex-col min-h-0">
-                   <Button variant="ghost" size="xs" className="self-start text-[10px] text-white/40 mb-4 font-black uppercase" onClick={() => setWizardStep('actions')}>
-                      <ArrowLeft size={12} className="mr-2"/> VOLVER A ACCIONES
-                   </Button>
-                   <div className="grid grid-cols-1 gap-2 overflow-y-auto custom-scrollbar pr-1 pb-4">
-                      {LOSS_TYPES.map(type => (
-                        <Button key={type} className="h-12 bg-black/40 hover:bg-red-600 text-white text-xs font-black justify-start px-6 rounded-lg transition-colors border border-white/5"
-                          onClick={() => handleActionRecord(type)}>
-                          {type.toUpperCase()}
-                        </Button>
-                      ))}
-                   </div>
-                </div>
-              ) : (
-                <div className="flex-1 flex flex-col min-h-0">
-                  <Button variant="ghost" size="xs" className="self-start text-[10px] text-white/40 mb-4 font-black uppercase" onClick={() => setWizardStep('actions')}>
-                    <ArrowLeft size={12} className="mr-2"/> VOLVER
-                  </Button>
-                  <div className="flex-1 overflow-y-auto space-y-6 pr-1 custom-scrollbar pb-24">
+              <div className="flex-1 overflow-y-auto space-y-6 pr-1 custom-scrollbar pb-24">
+                {wizardStep === 'losses' ? (
+                  <div className="grid grid-cols-1 gap-2">
+                    {LOSS_TYPES.map(type => (
+                      <Button key={type} className="h-12 bg-black/40 hover:bg-red-600 text-white text-xs font-black justify-start px-6 rounded-lg" onClick={() => handleActionRecord(type)}>
+                        {type.toUpperCase()}
+                      </Button>
+                    ))}
+                  </div>
+                ) : (
+                  <>
                     <section>
                       <label className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] block mb-3">Defensa Rival</label>
                       <div className="grid grid-cols-3 gap-2">
                         {DEFENSE_TYPES.map(d => (
                           <Button key={d} size="sm" variant={details.defense === d ? "default" : "outline"} 
-                            className={`h-10 text-[10px] font-black border-white/10 ${details.defense === d ? "bg-white text-black" : "text-white/70"}`}
+                            // CORRECCIÓN: Texto negro (slate-900) cuando el fondo es blanco (seleccionado)
+                            className={`h-10 text-[10px] font-black border-white/10 ${details.defense === d ? "bg-white text-slate-900" : "text-white/70"}`}
                             onClick={() => setDetails({...details, defense: d})}>{d}</Button>
                         ))}
                       </div>
@@ -346,13 +334,13 @@ export default function HandballTracker() {
                       <div className="grid grid-cols-3 gap-2">
                         {COURT_ZONES.map(z => (
                           <Button key={z} size="sm" variant={details.courtZone === z ? "default" : "outline"} 
-                            className={`h-10 text-[8px] font-black leading-tight border-white/10 ${details.courtZone === z ? "bg-white text-black" : "text-white/70"}`}
+                            className={`h-10 text-[8px] font-black leading-tight border-white/10 ${details.courtZone === z ? "bg-white text-slate-900" : "text-white/70"}`}
                             onClick={() => setDetails({...details, courtZone: z})}>{z}</Button>
                         ))}
                       </div>
                     </section>
                     <section className="bg-black/40 p-4 rounded-2xl border border-white/5">
-                      <label className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] block mb-4 text-center">Zona Portería</label>
+                      <label className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] block mb-4 text-center">Zona Portería (1-9)</label>
                       <div className="grid grid-cols-3 gap-2 aspect-square max-w-[150px] mx-auto bg-black/60 p-1 rounded-lg">
                         {GOAL_ZONES.map(z => (
                           <Button key={z} variant={details.goalZone === z ? "default" : "ghost"} 
@@ -361,17 +349,15 @@ export default function HandballTracker() {
                         ))}
                       </div>
                     </section>
-                  </div>
-                  <div className="absolute bottom-4 left-4 right-4 bg-slate-900/90 p-2 rounded-xl backdrop-blur-sm border border-white/5">
-                    <Button className="w-full bg-green-500 hover:bg-green-400 text-white font-black h-14 text-xl italic uppercase shadow-2xl" 
-                      disabled={!details.defense || !details.goalZone} onClick={() => handleActionRecord()}>
-                      CONFIRMAR DATOS
-                    </Button>
-                  </div>
-                </div>
-              )}
+                  </>
+                )}
+              </div>
+              <div className="absolute bottom-4 left-4 right-4 bg-slate-900/90 p-2 rounded-xl backdrop-blur-sm border border-white/5">
+                <Button className="w-full bg-green-500 hover:bg-green-400 text-white font-black h-14 text-xl italic uppercase shadow-2xl" disabled={!details.defense || !details.goalZone} onClick={() => handleActionRecord()}>Confirmar Datos</Button>
+              </div>
             </div>
           ) : (
+            /* PANEL ESTADÍSTICAS CENTRAL (DISEÑO CAPTURA) */
             <div className="flex-1 bg-slate-900 border border-slate-700 rounded-2xl flex flex-col overflow-hidden shadow-2xl h-full">
               <div className="bg-green-600 p-4 flex items-center gap-3 justify-center shrink-0 shadow-lg">
                 <Activity size={20} className="text-white"/>
@@ -383,7 +369,6 @@ export default function HandballTracker() {
                   <span>MÉTRICAS DEL PARTIDO</span>
                   <span>EQUIPO B</span>
                 </div>
-                
                 {[
                   { label: "Paradas", a: events.filter(e=>e.team==='A' && e.action==='PARADA').length, b: events.filter(e=>e.team==='B' && e.action==='PARADA').length },
                   { label: "Pérdidas", a: events.filter(e=>e.team==='A' && e.action==='PÉRDIDA').length, b: events.filter(e=>e.team==='B' && e.action==='PÉRDIDA').length },
@@ -396,7 +381,6 @@ export default function HandballTracker() {
                     <span className="w-12 text-center font-black text-amber-400 text-2xl italic leading-none">{stat.b}</span>
                   </div>
                 ))}
-
                 <div className="mt-auto grid grid-cols-2 gap-3 pt-6 border-t border-slate-700 shrink-0">
                   <Button className="bg-green-600 hover:bg-green-500 text-white font-black uppercase italic h-14 text-xs shadow-lg">Informe Ejecutivo</Button>
                   <Button className="bg-amber-600 hover:bg-amber-500 text-white font-black uppercase italic h-14 text-xs shadow-lg">Descargar CSV</Button>
@@ -406,29 +390,44 @@ export default function HandballTracker() {
           )}
         </div>
 
-        {/* PANEL DERECHO: JUGADORES B */}
+        {/* PANEL DERECHO: JUGADORES B (ÁMBAR) */}
         <div className={`flex-1 rounded-2xl border-2 border-amber-500/30 bg-amber-950/10 p-4 flex flex-col min-h-0 overflow-hidden transition-opacity ${selectedPlayer?.team === 'A' ? 'opacity-20 pointer-events-none' : 'opacity-100'}`}>
           <div className="flex items-center justify-end gap-2 mb-3 shrink-0">
-            <span className="text-[10px] font-black text-white/80 uppercase tracking-widest leading-none italic">V-VISITANTE</span>
+            <span className="text-[10px] font-black text-white/80 uppercase tracking-widest leading-none italic">Plantilla Visitante (B)</span>
             <Trophy size={14} className="text-amber-400"/>
           </div>
-          <div className="grid grid-cols-4 gap-2 overflow-y-auto custom-scrollbar flex-1 content-start">
-            {playersB.map(p => (
-              <Button key={p.number} onClick={() => {setSelectedPlayer({team:'B', number:p.number}); setWizardStep('actions')}} 
-                className={`h-16 flex flex-col font-black rounded-xl border-b-4 shadow-lg transition-all active:scale-90 ${
-                  selectedPlayer?.number === p.number && selectedPlayer.team === 'B' 
-                  ? 'bg-white text-amber-900 border-amber-950' 
-                  : 'bg-amber-600 hover:bg-amber-500 text-white border-amber-900'
-                }`}>
-                <span className="text-2xl leading-none italic">{p.number}</span>
-                <span className="text-[8px] font-bold opacity-80 truncate w-full px-1 leading-tight">{p.name}</span>
-              </Button>
-            ))}
-          </div>
+          {selectedPlayer?.team === 'B' ? (
+              <div className="flex-1 flex flex-col">
+                <div className="flex items-center gap-4 bg-white/10 p-3 rounded-xl border border-white/20 mb-4 shrink-0">
+                  <div className="bg-white text-amber-900 w-12 h-12 rounded-lg flex items-center justify-center text-3xl font-black italic shadow-inner">{selectedPlayer.number}</div>
+                  <div className="flex flex-col leading-none">
+                    <span className="text-[10px] text-white/40 font-black uppercase mb-1">Dorsal Seleccionado</span>
+                    <span className="text-amber-400 font-black text-lg uppercase italic">{playersB.find(p => p.number === selectedPlayer.number)?.name}</span>
+                  </div>
+                  <Button variant="ghost" size="sm" onClick={() => setSelectedPlayer(null)} className="ml-auto text-white/50 hover:text-white"><XCircle/></Button>
+                </div>
+                <div className="grid grid-cols-2 gap-3 flex-1 overflow-y-auto content-start pb-4">
+                  <Button className="h-20 bg-green-600 text-white font-black text-3xl col-span-2 border-b-4 border-green-800" onClick={() => {setCurrentAction('GOL'); setWizardStep('details')}}>GOL</Button>
+                  <Button className="h-16 bg-blue-600 text-white font-black text-lg border-b-4 border-blue-800" onClick={() => {setCurrentAction('PARADA'); setWizardStep('details')}}>PARADA</Button>
+                  <Button className="h-16 bg-orange-600 text-white font-black text-lg border-b-4 border-orange-800" onClick={() => {setCurrentAction('FUERA'); setWizardStep('details')}}>FUERA</Button>
+                  <Button className="h-14 bg-red-600 text-white font-black col-span-2 text-xs border-b-4 border-red-800" onClick={() => {setCurrentAction('PÉRDIDA'); setWizardStep('losses')}}>PÉRDIDA / ERROR</Button>
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-4 gap-2 overflow-y-auto custom-scrollbar flex-1 content-start">
+                {playersB.map(p => (
+                  <Button key={p.number} onClick={() => setSelectedPlayer({team:'B', number:p.number})} 
+                    className="h-16 flex flex-col font-black rounded-xl border-b-4 bg-amber-600 hover:bg-amber-500 text-white border-amber-900">
+                    <span className="text-2xl leading-none italic">{p.number}</span>
+                    <span className="text-[8px] font-bold opacity-80 truncate w-full px-1 leading-tight">{p.name}</span>
+                  </Button>
+                ))}
+              </div>
+            )}
         </div>
       </div>
 
-      {/* FOOTER: LIVE MATCH FEED */}
+      {/* FOOTER: LIVE FEED */}
       <div className="h-10 bg-black/95 border-t border-white/10 flex items-center gap-6 px-6 overflow-x-auto whitespace-nowrap shrink-0 scrollbar-hide shadow-inner">
         <div className="flex items-center gap-2 text-slate-500 font-black text-[10px] uppercase italic">
           <History size={14}/> LIVE FEED:
@@ -438,7 +437,7 @@ export default function HandballTracker() {
             <div key={e.id} className="flex items-center gap-2">
               <span className="text-[10px] text-green-500 font-mono font-bold">[{formatTime(e.timestamp)}]</span>
               <span className={`text-[11px] font-black italic ${e.team === 'A' ? 'text-blue-400' : 'text-amber-400'}`}>
-                #{e.player} {e.action} {e.specificAction ? `(${e.specificAction})` : ""}
+                #{e.player} {e.action}
               </span>
             </div>
           ))}
