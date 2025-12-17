@@ -9,7 +9,7 @@ import { Switch } from "@/components/ui/switch"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import {
   Pause, Play, ArrowLeft, Trophy, History, Settings, Edit3, Target, Shield, Maximize2, Filter,
-  CheckCircle2, Trash2, Plus
+  CheckCircle2, Trash2, Plus, FileBarChart
 } from "lucide-react"
 import { HistoryPanel } from "@/components/history-panel"
 
@@ -21,7 +21,7 @@ type Player = {
   isGoalkeeper: boolean
 }
 
-type DefenseType = "6:0" | "5:1" | "3:2:1" | "4:2" | "Mixta" | "Presión"
+type DefenseType = "6:0" | "5:1" | "3:2:1" | "4:2" | "Mixta" | "Presión" | "Otro"
 
 type Event = {
   id: string
@@ -43,8 +43,9 @@ type AppState = "SETUP" | "MATCH"
 
 const COURT_ZONES = ["Extremo Izq", "Lateral Izq", "Central", "Lateral Der", "Extremo Der", "Pivote", "9m"]
 const GOAL_ZONES = [1, 2, 3, 4, 5, 6, 7, 8, 9]
-const DEFENSE_TYPES: DefenseType[] = ["6:0", "5:1", "3:2:1", "4:2", "Mixta", "Presión"]
-const CONTEXTS = ["Superioridad", "Inferioridad", "Contraataque"]
+const DEFENSE_TYPES: DefenseType[] = ["6:0", "5:1", "3:2:1", "4:2", "Mixta", "Presión", "Otro"]
+// Añadido "Igualdad" al contexto como pediste
+const CONTEXTS = ["Igualdad", "Superioridad", "Inferioridad", "Contraataque"]
 
 // --- COMPONENTES AUXILIARES ---
 
@@ -54,7 +55,6 @@ const HeaderScoreboard = ({ localScore, visitorScore, teamAName, teamBName, time
     <div className="flex flex-col items-start min-w-[150px]">
       <div className="flex items-center gap-2 mb-1">
          <span className="text-xs text-blue-400 font-bold tracking-wider">LOCAL (A)</span>
-         <span className="text-[9px] bg-blue-900/50 text-blue-300 px-1 rounded border border-blue-800">{defenseA}</span>
       </div>
       <div className="flex items-baseline gap-3">
         <span className="text-3xl font-bold text-white leading-none tabular-nums">{localScore}</span>
@@ -81,7 +81,6 @@ const HeaderScoreboard = ({ localScore, visitorScore, teamAName, teamBName, time
     <div className="flex flex-col items-end min-w-[150px]">
       <div className="flex items-center gap-2 mb-1 flex-row-reverse">
         <span className="text-xs text-amber-400 font-bold tracking-wider">VISITANTE (B)</span>
-        <span className="text-[9px] bg-amber-900/50 text-amber-300 px-1 rounded border border-amber-800">{defenseB}</span>
       </div>
       <div className="flex items-baseline gap-3 flex-row-reverse">
         <span className="text-3xl font-bold text-white leading-none tabular-nums">{visitorScore}</span>
@@ -114,7 +113,8 @@ const PlayerGrid = ({ team, players, selectedPlayerA, selectedPlayerB, handlePla
   </div>
 )
 
-const StatsTable = ({ events, teamAName, teamBName }: { events: Event[], teamAName: string, teamBName: string }) => {
+// --- COMPONENTE TABLA ESTADÍSTICAS MODIFICADO ---
+const StatsTable = ({ events, teamAName, teamBName, onExport }: { events: Event[], teamAName: string, teamBName: string, onExport: () => void }) => {
     const stats = useMemo(() => {
         const calculate = (team: "A" | "B") => ({
             goals: events.filter(e => e.team === team && e.action.startsWith("GOL")).length,
@@ -122,8 +122,10 @@ const StatsTable = ({ events, teamAName, teamBName }: { events: Event[], teamANa
             saves: events.filter(e => e.team === team && e.action === "PARADA").length,
             turnovers: events.filter(e => e.team === team && e.action === "PÉRDIDA").length,
             goals7m: events.filter(e => e.team === team && e.action === "GOL 7M").length,
+            // Lógica para contextos
             goalsSup: events.filter(e => e.team === team && e.action.startsWith("GOL") && e.context?.includes("Superioridad")).length,
             goalsInf: events.filter(e => e.team === team && e.action.startsWith("GOL") && e.context?.includes("Inferioridad")).length,
+            goalsEq: events.filter(e => e.team === team && e.action.startsWith("GOL") && (e.context?.includes("Igualdad") || !e.context || e.context.length === 0)).length,
         })
         return { A: calculate("A"), B: calculate("B") }
     }, [events]);
@@ -132,58 +134,60 @@ const StatsTable = ({ events, teamAName, teamBName }: { events: Event[], teamANa
     const effB = stats.B.shots > 0 ? Math.round((stats.B.goals / stats.B.shots) * 100) : 0;
 
     const StatRow = ({ label, valA, valB, highlight = false }: any) => (
-        <div className={`flex items-center text-xs py-1.5 border-b border-slate-300/40 hover:bg-slate-50 ${highlight ? 'bg-slate-100 font-bold' : ''}`}>
-            <div className={`flex-1 text-center ${highlight ? 'text-blue-700' : ''}`}>{valA}</div>
-            <div className="w-32 text-center text-slate-500 uppercase text-[9px] font-semibold tracking-wider">{label}</div>
-            <div className={`flex-1 text-center ${highlight ? 'text-amber-700' : ''}`}>{valB}</div>
+        <div className={`flex items-center text-xs py-2 border-b border-slate-300/40 hover:bg-slate-50 ${highlight ? 'bg-slate-100 font-bold' : ''}`}>
+            <div className={`flex-1 text-center font-bold ${highlight ? 'text-blue-700' : 'text-slate-700'}`}>{valA}</div>
+            <div className="w-36 text-center text-slate-500 uppercase text-[9px] font-semibold tracking-wider">{label}</div>
+            <div className={`flex-1 text-center font-bold ${highlight ? 'text-amber-700' : 'text-slate-700'}`}>{valB}</div>
         </div>
     );
 
     return (
         <div className="bg-white text-slate-900 rounded-lg overflow-hidden flex flex-col h-full shadow-lg text-sm border border-slate-300">
-            <div className="bg-slate-800 text-white text-center py-1.5 font-bold uppercase tracking-widest text-[10px]">Estadísticas Tiempo Real</div>
-            <div className="flex border-b border-slate-300 bg-slate-100 font-bold text-xs py-1.5">
+            <div className="bg-green-600 text-white text-center py-2 font-bold uppercase tracking-widest text-[11px]">Estadísticas en Tiempo Real</div>
+            
+            <div className="flex border-b border-slate-300 bg-slate-100 font-bold text-xs py-2">
                 <div className="flex-1 text-center text-blue-700 truncate px-1">{teamAName}</div>
                 <div className="flex-1 text-center text-amber-700 truncate px-1">{teamBName}</div>
             </div>
 
-            <div className="flex items-center justify-around px-4 py-1 border-b border-slate-300 bg-slate-50/50">
-                <span className="text-3xl font-black text-blue-600">{stats.A.goals}</span>
-                 <div className="flex flex-col items-center text-[9px] text-slate-400 font-bold relative top-1">
-                    <span>VS</span>
-                 </div>
-                <span className="text-3xl font-black text-amber-600">{stats.B.goals}</span>
-            </div>
+            {/* Marcador grande ELIMINADO como pediste, solo estadísticas */}
 
-            <div className="flex-1 flex flex-col overflow-y-auto custom-scrollbar bg-white">
+            <div className="flex-1 flex flex-col overflow-y-auto custom-scrollbar bg-slate-50/50">
                  <StatRow label="Efectividad Tiro" valA={`${effA}%`} valB={`${effB}%`} highlight />
-                 <StatRow label="Paradas (Portero)" valA={stats.A.saves} valB={stats.B.saves} />
+                 <StatRow label="Paradas" valA={stats.A.saves} valB={stats.B.saves} />
                  <StatRow label="Pérdidas" valA={stats.A.turnovers} valB={stats.B.turnovers} />
-                 <div className="my-1 border-t border-slate-100"></div>
                  <StatRow label="Goles 7m" valA={`${stats.A.goals7m}`} valB={`${stats.B.goals7m}`} />
+                 <div className="my-1 border-t border-slate-200"></div>
                  <StatRow label="Goles Superioridad" valA={stats.A.goalsSup} valB={stats.B.goalsSup} />
                  <StatRow label="Goles Inferioridad" valA={stats.A.goalsInf} valB={stats.B.goalsInf} />
+                 {/* Añadido Goles Igualdad */}
+                 <StatRow label="Goles Igualdad" valA={stats.A.goalsEq} valB={stats.B.goalsEq} />
+            </div>
+
+            {/* BOTONES INFERIORES AÑADIDOS */}
+            <div className="p-3 bg-white border-t border-slate-200 grid grid-cols-2 gap-3 shrink-0">
+                <Button className="bg-green-600 hover:bg-green-700 text-white font-black uppercase text-[10px] h-12 leading-tight shadow-md" onClick={() => alert("Evento Registrado (Simulación)")}>
+                    Registrar<br/>Evento
+                </Button>
+                <Button className="bg-orange-500 hover:bg-orange-600 text-white font-black uppercase text-[10px] h-12 leading-tight shadow-md" onClick={onExport}>
+                    Informe<br/>Ejecutivo
+                </Button>
             </div>
         </div>
     )
 }
 
-// 4. PORTERÍA AVANZADA (MODIFICADO: SOLO TIROS VISITANTES)
 const PorteriaAdvanced = ({ events }: { events: Event[] }) => {
   const [filter, setFilter] = useState<"ALL" | "WING" | "7M">("ALL");
 
-  // FILTRO SOLO EQUIPO B (VISITANTE)
   const relevantShots = useMemo(() => {
     return events.filter(e => {
-      if (e.team !== "B") return false; // <--- AQUÍ ESTÁ EL CAMBIO CLAVE: SOLO VISITANTES
-
+      if (e.team !== "B") return false; 
       if (!e.goalZone) return false;
       const isShot = ["GOL", "GOL 7M", "PARADA", "BLOCADO"].some(act => e.action.startsWith(act));
       if (!isShot) return false;
-
       if (filter === "WING" && !e.courtZone?.includes("Extremo")) return false;
       if (filter === "7M" && !e.action.includes("7M")) return false;
-
       return true;
     });
   }, [events, filter]);
@@ -193,7 +197,6 @@ const PorteriaAdvanced = ({ events }: { events: Event[] }) => {
       const maxGoals = Math.max(...goalsPerZone, 1); 
       return { goalsPerZone, maxGoals };
   }, [relevantShots]);
-
 
   const getHeatmapColor = (zoneIndex: number) => {
       const goals = heatmapScale.goalsPerZone[zoneIndex];
@@ -250,10 +253,12 @@ const PorteriaAdvanced = ({ events }: { events: Event[] }) => {
   )
 }
 
+// --- WIZARD MODIFICADO CON DEFENSA RIVAL Y CONTEXTO IGUALDAD ---
 const ActionWizard = ({
   wizardState, activePlayer, isGoalkeeper, handleBack, currentAction, handleActionSelect,
   selectedContext, toggleContext, confirmEvent,
-  selectedCourtZone, setSelectedCourtZone, selectedGoalZone, setSelectedGoalZone
+  selectedCourtZone, setSelectedCourtZone, selectedGoalZone, setSelectedGoalZone,
+  selectedDefense, setSelectedDefense 
 }: any) => (
   <div className="bg-slate-900 border border-slate-700 rounded-xl p-3 h-full flex flex-col relative overflow-hidden shadow-2xl min-h-0">
     <div className="flex justify-between items-center mb-2 pb-2 border-b border-slate-700 shrink-0">
@@ -294,15 +299,35 @@ const ActionWizard = ({
       <div className="flex-1 flex flex-col h-full animate-in slide-in-from-right-10 overflow-hidden pb-14">
         <div className="flex-1 overflow-y-auto space-y-3 p-1 custom-scrollbar">
 
+          {/* DEFENSA RIVAL (Añadido en la parte superior como pediste) */}
+          <div className="bg-slate-950/80 p-2 rounded-lg border border-slate-800/50">
+             <div className="text-[9px] font-bold text-slate-500 mb-1.5 uppercase tracking-widest flex items-center gap-1"><Shield className="w-3 h-3"/> Defensa Rival (Momento)</div>
+             <div className="flex flex-wrap gap-1.5">
+                {DEFENSE_TYPES.map(dt => (
+                     <Button key={dt} size="sm" variant="outline"
+                        className={`h-7 text-[9px] uppercase font-bold px-2 transition-all ${selectedDefense === dt ? "bg-indigo-600 border-indigo-500 text-white" : "bg-slate-900 border-slate-700 text-slate-400 hover:bg-slate-800"}`}
+                        onClick={() => setSelectedDefense(dt)}>
+                        {dt}
+                    </Button>
+                ))}
+             </div>
+          </div>
+
+          {/* Contexto Táctico (Con IGUALDAD añadido) */}
           {currentAction.startsWith("GOL") && (
               <div className="bg-slate-950/80 p-2 rounded-lg border border-slate-800/50">
                 <div className="text-[9px] font-bold text-slate-500 mb-1.5 uppercase tracking-widest flex items-center gap-1"><Filter className="w-3 h-3"/> Contexto Táctico</div>
-                <div className="flex flex-wrap gap-1.5">
+                <div className="grid grid-cols-2 gap-1.5">
                     {CONTEXTS.map(ctx => {
                         const isActive = selectedContext.includes(ctx);
+                        let activeClass = "bg-blue-600 border-blue-500 text-white";
+                        if(ctx.includes("Sup")) activeClass = "bg-green-600 border-green-500 text-white";
+                        if(ctx.includes("Inf")) activeClass = "bg-red-600 border-red-500 text-white";
+                        if(ctx.includes("Igualdad")) activeClass = "bg-slate-100 text-slate-900 border-white font-black";
+
                         return (
                             <Button key={ctx} size="sm" variant="outline"
-                                className={`h-7 text-[9px] uppercase font-bold px-2 transition-all ${isActive ? (ctx.includes("Sup") ? "bg-green-600 border-green-500 text-white" : ctx.includes("Inf") ? "bg-red-600 border-red-500 text-white" : "bg-blue-600 border-blue-500 text-white") : "bg-slate-900 border-slate-700 text-slate-400 hover:bg-slate-800"}`}
+                                className={`h-7 text-[9px] uppercase font-bold px-2 transition-all ${isActive ? activeClass : "bg-slate-900 border-slate-700 text-slate-400 hover:bg-slate-800"}`}
                                 onClick={() => toggleContext(ctx)}>
                                 {isActive && <CheckCircle2 className="w-3 h-3 mr-1"/>} {ctx}
                             </Button>
@@ -362,7 +387,6 @@ export default function MatchView() {
   const [teamBName, setTeamBName] = useState("Visitante B")
   const [defenseA, setDefenseA] = useState<DefenseType>("6:0")
   const [defenseB, setDefenseB] = useState<DefenseType>("6:0")
-  // INICIALIZADO A 16 JUGADORES (Se pueden borrar luego)
   const [teamAPlayers, setTeamAPlayers] = useState<Player[]>(Array.from({ length: 16 }, (_, i) => ({ number: i + 1, name: `Jugador A${i + 1}`, isGoalkeeper: i === 0 || i === 12 })))
   const [teamBPlayers, setTeamBPlayers] = useState<Player[]>(Array.from({ length: 16 }, (_, i) => ({ number: i + 1, name: `Jugador B${i + 1}`, isGoalkeeper: i === 0 || i === 12 })))
 
@@ -377,9 +401,11 @@ export default function MatchView() {
   const [wizardState, setWizardState] = useState<WizardState>("IDLE")
   const [currentAction, setCurrentAction] = useState<string | null>(null)
   
+  // Estados para detalles de acción
   const [selectedCourtZone, setSelectedCourtZone] = useState<string | null>(null)
   const [selectedGoalZone, setSelectedGoalZone] = useState<number | null>(null)
   const [selectedContext, setSelectedContext] = useState<string[]>([])
+  const [selectedDefense, setSelectedDefense] = useState<DefenseType | null>(null)
 
   useEffect(() => {
     let interval: NodeJS.Timeout
@@ -403,7 +429,10 @@ export default function MatchView() {
     if (team === "A") { setSelectedPlayerA(number); setSelectedPlayerB(null); }
     else { setSelectedPlayerB(number); setSelectedPlayerA(null); }
     setWizardState("ACTION_SELECTION")
-    resetWizard()
+    // Pre-seleccionar la defensa por defecto del rival al abrir el wizard
+    const activeTeam = team;
+    const defaultRivalDefense = activeTeam === "A" ? defenseB : defenseA;
+    resetWizard(defaultRivalDefense)
   }
 
   const handleActionSelect = (action: string) => {
@@ -429,7 +458,7 @@ export default function MatchView() {
       player: info.player, team: info.team, action: action,
       courtZone: selectedCourtZone || undefined, goalZone: selectedGoalZone || undefined,
       context: selectedContext.length > 0 ? selectedContext : undefined,
-      defenseAtMoment: info.team === "A" ? defenseB : defenseA 
+      defenseAtMoment: selectedDefense || (info.team === "A" ? defenseB : defenseA)
     }
 
     setEvents(prev => [newEvent, ...prev])
@@ -440,7 +469,13 @@ export default function MatchView() {
     resetUI()
   }
 
-  const resetWizard = () => { setCurrentAction(null); setSelectedCourtZone(null); setSelectedGoalZone(null); setSelectedContext([]) }
+  const resetWizard = (defaultDef?: DefenseType) => { 
+      setCurrentAction(null); 
+      setSelectedCourtZone(null); 
+      setSelectedGoalZone(null); 
+      setSelectedContext([]);
+      if(defaultDef) setSelectedDefense(defaultDef);
+  }
   const resetUI = () => { setWizardState("IDLE"); setSelectedPlayerA(null); setSelectedPlayerB(null); resetWizard() }
   const handleBack = () => { wizardState === "DETAILS" ? setWizardState("ACTION_SELECTION") : resetUI() }
   const handleUndo = () => {
@@ -450,7 +485,19 @@ export default function MatchView() {
       setEvents(prev=>prev.slice(1));
   }
 
-  // --- SETUP COLUMN (CON AÑADIR Y ELIMINAR) ---
+  const exportData = () => {
+      const csvContent = "data:text/csv;charset=utf-8," 
+          + "Time,Team,Player,Action,Defense,Context\n"
+          + events.map(e => `${e.timeFormatted},${e.team},${e.player},${e.action},${e.defenseAtMoment},${e.context?.join("|")}`).join("\n");
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", "partido_handball.csv");
+      document.body.appendChild(link);
+      link.click();
+  }
+
+  // --- SETUP COLUMN ---
   if (appState === "SETUP") {
     const SetupTeamColumn = ({ team, name, setName, defense, setDefense, players, setPlayers, color }: any) => {
       const [editingId, setEditingId] = useState<number | null>(null);
@@ -462,15 +509,12 @@ export default function MatchView() {
           setEditingId(null);
       };
       
-      // NUEVA FUNCIÓN ELIMINAR JUGADOR
       const deletePlayer = (number: number) => {
           setPlayers(players.filter((p:Player) => p.number !== number));
       };
 
-      // NUEVA FUNCIÓN AÑADIR JUGADOR
       const addPlayer = () => {
-          if (players.length >= 16) return; // Límite duro opcional
-          // Calcular nuevo número (max + 1)
+          if (players.length >= 16) return;
           const maxNum = players.length > 0 ? Math.max(...players.map((p:Player) => p.number)) : 0;
           const newP = { number: maxNum + 1, name: 'Nuevo Jugador', isGoalkeeper: false };
           setPlayers([...players, newP]);
@@ -573,7 +617,7 @@ export default function MatchView() {
           <div className="flex flex-col gap-3 h-full min-h-0 relative">
             {selectedPlayerA ? (
                 <div className="h-full animate-in slide-in-from-right-4 duration-200">
-                <ActionWizard wizardState={wizardState} activePlayer={getActivePlayerInfo()} isGoalkeeper={getActivePlayerInfo()?.isGK} handleBack={handleBack} currentAction={currentAction} handleActionSelect={handleActionSelect} selectedContext={selectedContext} toggleContext={toggleContext} confirmEvent={() => confirmEvent()} selectedCourtZone={selectedCourtZone} setSelectedCourtZone={setSelectedCourtZone} selectedGoalZone={selectedGoalZone} setSelectedGoalZone={setSelectedGoalZone} />
+                <ActionWizard wizardState={wizardState} activePlayer={getActivePlayerInfo()} isGoalkeeper={getActivePlayerInfo()?.isGK} handleBack={handleBack} currentAction={currentAction} handleActionSelect={handleActionSelect} selectedContext={selectedContext} toggleContext={toggleContext} confirmEvent={() => confirmEvent()} selectedCourtZone={selectedCourtZone} setSelectedCourtZone={setSelectedCourtZone} selectedGoalZone={selectedGoalZone} setSelectedGoalZone={setSelectedGoalZone} selectedDefense={selectedDefense} setSelectedDefense={setSelectedDefense} />
                 </div>
             ) : (
                 <PlayerGrid team="A" players={teamAPlayers} selectedPlayerA={selectedPlayerA} selectedPlayerB={selectedPlayerB} handlePlayerSelect={handlePlayerSelect} teamName={teamAName} />
@@ -582,7 +626,8 @@ export default function MatchView() {
 
           <div className="flex flex-col gap-3 h-full min-h-0">
             <div className="h-[45%] min-h-0 shrink-0">
-                <StatsTable events={events} teamAName={teamAName} teamBName={teamBName} />
+                {/* BOTONES EXPORTAR E INFORME AÑADIDOS AQUI */}
+                <StatsTable events={events} teamAName={teamAName} teamBName={teamBName} onExport={exportData} />
             </div>
             <div className="h-[55%] min-h-0 relative shrink-0">
                  <PorteriaAdvanced events={events} />
@@ -599,7 +644,7 @@ export default function MatchView() {
             <div className="h-1/2 min-h-0 relative">
                 {selectedPlayerB ? (
                     <div className="h-full animate-in slide-in-from-left-4 duration-200">
-                    <ActionWizard wizardState={wizardState} activePlayer={getActivePlayerInfo()} isGoalkeeper={getActivePlayerInfo()?.isGK} handleBack={handleBack} currentAction={currentAction} handleActionSelect={handleActionSelect} selectedContext={selectedContext} toggleContext={toggleContext} confirmEvent={() => confirmEvent()} selectedCourtZone={selectedCourtZone} setSelectedCourtZone={setSelectedCourtZone} selectedGoalZone={selectedGoalZone} setSelectedGoalZone={setSelectedGoalZone} />
+                    <ActionWizard wizardState={wizardState} activePlayer={getActivePlayerInfo()} isGoalkeeper={getActivePlayerInfo()?.isGK} handleBack={handleBack} currentAction={currentAction} handleActionSelect={handleActionSelect} selectedContext={selectedContext} toggleContext={toggleContext} confirmEvent={() => confirmEvent()} selectedCourtZone={selectedCourtZone} setSelectedCourtZone={setSelectedCourtZone} selectedGoalZone={selectedGoalZone} setSelectedGoalZone={setSelectedGoalZone} selectedDefense={selectedDefense} setSelectedDefense={setSelectedDefense} />
                     </div>
                 ) : (
                     <PlayerGrid team="B" players={teamBPlayers} selectedPlayerA={selectedPlayerA} selectedPlayerB={selectedPlayerB} handlePlayerSelect={handlePlayerSelect} teamName={teamBName} />
@@ -610,7 +655,7 @@ export default function MatchView() {
                     <span className="text-[10px] font-bold uppercase text-slate-400 flex items-center gap-1"><History className="w-3 h-3"/> Live Feed</span>
                 </div>
                 <div className="flex-1 overflow-hidden relative">
-                    <HistoryPanel events={events} teamAName={teamAName} teamBName={teamBName} onUndo={handleUndo} onExport={() => alert("Exportar CSV")} formatTime={formatTime} />
+                    <HistoryPanel events={events} teamAName={teamAName} teamBName={teamBName} onUndo={handleUndo} onExport={exportData} formatTime={formatTime} />
                 </div>
             </div>
           </div>
