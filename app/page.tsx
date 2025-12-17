@@ -165,9 +165,6 @@ const PlayerGrid = ({ team, players, selectedPlayerA, selectedPlayerB, handlePla
   </div>
 )
 
-// Busca el componente ActionWizard y actualiza el renderizado del paso "DETAILS"
-// Especialmente los botones variant="outline" que son los que suelen fallar.
-
 const ActionWizard = ({
   wizardState,
   activePlayer,
@@ -188,9 +185,8 @@ const ActionWizard = ({
   confirmEvent,
 }: any) => (
   <div className="bg-slate-900 border border-slate-700 rounded-xl p-4 h-full flex flex-col relative overflow-hidden shadow-2xl">
-    {/* ... (La parte de IDLE y ACTION_SELECTION se mantiene igual, revisa solo si esos botones se ven mal) ... */}
     
-    {/* IMPORTANTE: Mantener ACTION_SELECTION visible, asegúrate que los botones grandes tengan texto blanco explícito */}
+    {/* SELECCIÓN DE ACCIÓN */}
     {wizardState === "ACTION_SELECTION" && (
       <div className="flex-1 flex flex-col animate-in fade-in zoom-in-95 duration-150 min-h-0">
         <div className="flex justify-between items-center mb-4 pb-2 border-b border-slate-700 shrink-0">
@@ -205,24 +201,21 @@ const ActionWizard = ({
           </div>
         </div>
         <div className="grid grid-cols-2 gap-3 flex-1 content-start overflow-y-auto pb-4 custom-scrollbar">
-           {/* Asegúrate que estos botones tengan 'text-white' */}
            {!isGoalkeeper ? (
              <>
                <Button className="h-24 text-2xl font-black bg-green-600 hover:bg-green-500 text-white shadow-lg col-span-2 border-b-4 border-green-800 active:translate-y-1 active:border-0" onClick={() => handleActionSelect("GOL")}>GOL</Button>
                <Button className="h-20 text-xl font-black bg-blue-600 hover:bg-blue-500 text-white shadow-lg border-b-4 border-blue-800 active:translate-y-1 active:border-0" onClick={() => handleActionSelect("PARADA")}>PARADA</Button>
                <Button className="h-20 text-xl font-black bg-amber-600 hover:bg-amber-500 text-white shadow-lg border-b-4 border-amber-800 active:translate-y-1 active:border-0" onClick={() => handleActionSelect("FUERA")}>FUERA</Button>
                <Button className="h-16 font-bold bg-red-600 hover:bg-red-500 text-white col-span-2 border-b-4 border-red-800" onClick={() => handleActionSelect("PÉRDIDA")}>PÉRDIDA / ERROR</Button>
-               {/* Agrega el resto de botones con clases similares... */}
              </>
            ) : (
-             // Botones portero...
              <Button className="h-24 text-2xl font-black bg-blue-600 hover:bg-blue-500 text-white col-span-2" onClick={() => handleActionSelect("PARADA")}>PARADA</Button>
            )}
         </div>
       </div>
     )}
 
-    {/* AQUÍ ESTÁ EL CAMBIO PRINCIPAL DE COLORES PARA LOS DETALLES */}
+    {/* DETALLES DE LA ACCIÓN */}
     {wizardState === "DETAILS" && (
       <div className="flex-1 flex flex-col h-full animate-in slide-in-from-right-4 duration-200 min-h-0">
         <div className="flex justify-between items-center mb-3 pb-2 border-b border-slate-700 shrink-0">
@@ -244,7 +237,6 @@ const ActionWizard = ({
                 <Button
                   key={def}
                   size="sm"
-                  // CAMBIO: Quitamos variant="outline" y ponemos clases explícitas
                   className={`text-xs font-bold border transition-all ${
                     selectedDefenseType === def 
                       ? "bg-indigo-600 text-white border-indigo-400 shadow-[0_0_15px_rgba(79,70,229,0.4)]" 
@@ -342,127 +334,8 @@ const ActionWizard = ({
   </div>
 )
 
-    {wizardState === "DETAILS" && (
-      <div className="flex-1 flex flex-col h-full animate-in slide-in-from-right-4 duration-200 min-h-0">
-        <div className="flex justify-between items-center mb-2 pb-2 border-b border-slate-800 shrink-0">
-          <Button variant="ghost" size="sm" onClick={handleBack} className="-ml-2 text-slate-400">
-            <ArrowLeft className="w-4 h-4" />
-          </Button>
-          <span className="text-green-400 font-bold tracking-wider">{currentAction}</span>
-        </div>
-        <div className="flex-1 overflow-y-auto space-y-4 pb-20 custom-scrollbar pr-1 min-h-0">
-          {/* DEFENSA RIVAL (SIEMPRE VISIBLE) */}
-          <div className="bg-slate-900/50 p-3 rounded-lg border border-slate-800">
-            <div className="text-[10px] font-bold text-slate-500 mb-2 uppercase tracking-wider flex items-center gap-1">
-              <Shield className="w-3 h-3" /> Defensa Rival / Situación
-            </div>
-            <div className="grid grid-cols-3 gap-2">
-              {DEFENSE_TYPES.map((def) => (
-                <Button
-                  key={def}
-                  size="sm"
-                  variant={selectedDefenseType === def ? "default" : "outline"}
-                  className={`text-xs ${selectedDefenseType === def ? "bg-indigo-600 text-white" : "bg-slate-900 border-slate-700 text-slate-400"}`}
-                  onClick={() => setSelectedDefenseType(def)}
-                >
-                  {def}
-                </Button>
-              ))}
-            </div>
-          </div>
-
-          {currentAction === "PÉRDIDA" && (
-            <div className="bg-red-950/20 p-3 rounded-lg border border-red-900/50">
-              <div className="text-[10px] font-bold text-red-400 mb-2 uppercase tracking-wider flex items-center gap-1">
-                <AlertCircle className="w-3 h-3" /> Tipo de Error
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                {LOSS_TYPES.map((loss) => (
-                  <Button
-                    key={loss}
-                    size="sm"
-                    variant={selectedLossType === loss ? "default" : "outline"}
-                    className={`text-xs h-auto py-2 ${selectedLossType === loss ? "bg-red-600 text-white" : "bg-slate-900 border-slate-700 text-slate-400"}`}
-                    onClick={() => setSelectedLossType(loss)}
-                  >
-                    {loss}
-                  </Button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <div className="bg-slate-900/50 p-3 rounded-lg border border-slate-800">
-            <div className="text-[10px] font-bold text-slate-500 mb-2 uppercase tracking-wider">Zona de Acción</div>
-            <div className="grid grid-cols-3 gap-2">
-              {COURT_ZONES.map((z) => (
-                <Button
-                  key={z}
-                  size="sm"
-                  variant={selectedCourtZone === z ? "default" : "outline"}
-                  className={`h-10 text-[10px] leading-tight break-words whitespace-normal ${selectedCourtZone === z ? "bg-blue-600 text-white" : "bg-slate-900 border-slate-700 text-slate-400"}`}
-                  onClick={() => setSelectedCourtZone(z)}
-                >
-                  {z}
-                </Button>
-              ))}
-            </div>
-          </div>
-
-          {["GOL", "PARADA", "FUERA", "POSTE", "BLOCADO", "GOL ENCAJADO"].includes(currentAction || "") && (
-            <div className="bg-slate-900/50 p-3 rounded-lg border border-slate-800">
-              <div className="text-[10px] font-bold text-slate-500 mb-2 uppercase tracking-wider">
-                Dirección Lanzamiento
-              </div>
-              <div className="aspect-square max-w-[200px] mx-auto grid grid-cols-3 gap-1 bg-slate-800 p-1 rounded">
-                {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((z) => (
-                  <Button
-                    key={z}
-                    variant="ghost"
-                    className={`h-full w-full text-lg font-bold rounded-sm transition-all ${selectedGoalZone === z ? "bg-green-500 text-white" : "bg-slate-900/50 text-slate-600 hover:bg-slate-700 hover:text-slate-300"}`}
-                    onClick={() => setSelectedGoalZone(z)}
-                  >
-                    {z}
-                  </Button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <div className="bg-slate-900/50 p-3 rounded-lg border border-slate-800">
-            <div className="text-[10px] font-bold text-slate-500 mb-2 uppercase tracking-wider">Situación de Juego</div>
-            <div className="flex flex-wrap gap-2">
-              {GAME_SITUATIONS.map((ctx) => (
-                <Button
-                  key={ctx}
-                  size="sm"
-                  variant={selectedContext.includes(ctx) ? "default" : "outline"}
-                  className={`text-xs ${selectedContext.includes(ctx) ? "bg-orange-600 hover:bg-orange-500 border-orange-500" : "bg-slate-900 border-slate-700"}`}
-                  onClick={() => toggleContext(ctx)}
-                >
-                  {ctx}
-                </Button>
-              ))}
-            </div>
-          </div>
-        </div>
-        <div className="absolute bottom-3 left-3 right-3 z-10">
-          <Button
-            size="lg"
-            className="w-full h-12 bg-green-600 hover:bg-green-500 text-white shadow-xl font-bold tracking-widest text-lg"
-            onClick={() => confirmEvent()}
-          >
-            CONFIRMAR
-          </Button>
-        </div>
-      </div>
-    )}
-  </div>
-)
-
 const PorteriaResponsive = ({ events }: { events: Event[] }) => {
   // --- LÓGICA DE FILTRADO ACTUALIZADA ---
-  // Filtramos SOLO acciones que representan un TIRO CONTRA LA PORTERÍA LOCAL.
   const shots = events.filter((e) => {
     // 1. Debe tener zona de portería
     if (!e.goalZone) return false
@@ -477,27 +350,23 @@ const PorteriaResponsive = ({ events }: { events: Event[] }) => {
       return ["PARADA", "GOL ENCAJADO"].includes(e.action)
     }
 
-    // Cualquier otra cosa (ej. Gol de Jugador A en ataque) se ignora
     return false
   })
 
   // Cálculos sobre los tiros FILTRADOS
   const total = shots.length
 
-  // Goles encajados: (Gol de B) O (Gol Encajado registrado por A)
+  // Goles encajados
   const goalsTotal = shots.filter(
     (s) => (s.team === "B" && s.action === "GOL") || (s.team === "A" && s.action === "GOL ENCAJADO"),
   ).length
 
-  // Paradas: (Parada de A) O (Parada registrada sobre B)
+  // Paradas
   const savesTotal = shots.filter((s) => s.action === "PARADA" || s.action === "BLOCADO").length
 
-  // Tiros fuera/poste
+  // Tiros fuera/poste (No usados en UI principal pero calculados)
   const missTotal = shots.filter((s) => s.action === "FUERA" || s.action === "POSTE").length
 
-  // Cálculo de Porcentaje: (Paradas / (Paradas + Goles)) * 100
-  // Excluimos "Fuera" y "Poste" del denominador de efectividad pura del portero si se quiere % de acierto bajo palos,
-  // PERO habitualmente % Paradas es Paradas / Tiros a Puerta (Goles + Paradas).
   const shotsOnTarget = goalsTotal + savesTotal
   const percentageTotal = shotsOnTarget > 0 ? Math.round((savesTotal / shotsOnTarget) * 100) : 0
 
@@ -511,7 +380,6 @@ const PorteriaResponsive = ({ events }: { events: Event[] }) => {
 
     const zSaves = zoneShots.filter((s) => s.action === "PARADA" || s.action === "BLOCADO").length
 
-    // Porcentaje de zona
     const zOnTarget = zGoals + zSaves
     const zonePercentage = zOnTarget > 0 ? Math.round((zSaves / zOnTarget) * 100) : 0
 
@@ -1015,17 +883,7 @@ export default function EventPad() {
     )
   }
 
-  // ... (código anterior: hooks, funciones, etc.)
-
-  if (isMobile) {
-    return (
-      // ... (todo el código de la versión móvil que YA TIENES, no toques esto)
-    )
-  }
-
-  // 👇👇 AQUÍ ES DONDE TIENES QUE PEGAR EL CÓDIGO NUEVO DEL LAYOUT 👇👇
-  // Borra desde este "return (" hasta el "}" final de la función y pega lo nuevo.
-  
+  // Layout Desktop Correcto
   return (
     <div className="flex flex-col h-screen bg-slate-950 text-slate-100 overflow-hidden box-border font-sans selection:bg-blue-500/30">
       {/* 1. Header Scoreboard */}
@@ -1169,4 +1027,4 @@ export default function EventPad() {
       </div>
     </div>
   )
-} // <--- Cierre de la función EventPad
+}
