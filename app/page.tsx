@@ -44,7 +44,6 @@ type AppState = "SETUP" | "MATCH"
 const COURT_ZONES = ["Extremo Izq", "Lateral Izq", "Central", "Lateral Der", "Extremo Der", "Pivote", "9m"]
 const GOAL_ZONES = [1, 2, 3, 4, 5, 6, 7, 8, 9]
 const DEFENSE_TYPES: DefenseType[] = ["6:0", "5:1", "3:2:1", "4:2", "Mixta", "Presión", "Otro"]
-// Añadido "Igualdad" al contexto como pediste
 const CONTEXTS = ["Igualdad", "Superioridad", "Inferioridad", "Contraataque"]
 
 // --- COMPONENTES AUXILIARES ---
@@ -113,7 +112,7 @@ const PlayerGrid = ({ team, players, selectedPlayerA, selectedPlayerB, handlePla
   </div>
 )
 
-// --- COMPONENTE TABLA ESTADÍSTICAS MODIFICADO ---
+// --- COMPONENTE TABLA ESTADÍSTICAS ---
 const StatsTable = ({ events, teamAName, teamBName, onExport }: { events: Event[], teamAName: string, teamBName: string, onExport: () => void }) => {
     const stats = useMemo(() => {
         const calculate = (team: "A" | "B") => ({
@@ -145,12 +144,11 @@ const StatsTable = ({ events, teamAName, teamBName, onExport }: { events: Event[
         <div className="bg-white text-slate-900 rounded-lg overflow-hidden flex flex-col h-full shadow-lg text-sm border border-slate-300">
             <div className="bg-green-600 text-white text-center py-2 font-bold uppercase tracking-widest text-[11px]">Estadísticas en Tiempo Real</div>
             
+            {/* Header de Equipos - Sin el marcador gigante debajo */}
             <div className="flex border-b border-slate-300 bg-slate-100 font-bold text-xs py-2">
                 <div className="flex-1 text-center text-blue-700 truncate px-1">{teamAName}</div>
                 <div className="flex-1 text-center text-amber-700 truncate px-1">{teamBName}</div>
             </div>
-
-            {/* Marcador grande ELIMINADO como pediste, solo estadísticas */}
 
             <div className="flex-1 flex flex-col overflow-y-auto custom-scrollbar bg-slate-50/50">
                  <StatRow label="Efectividad Tiro" valA={`${effA}%`} valB={`${effB}%`} highlight />
@@ -160,13 +158,13 @@ const StatsTable = ({ events, teamAName, teamBName, onExport }: { events: Event[
                  <div className="my-1 border-t border-slate-200"></div>
                  <StatRow label="Goles Superioridad" valA={stats.A.goalsSup} valB={stats.B.goalsSup} />
                  <StatRow label="Goles Inferioridad" valA={stats.A.goalsInf} valB={stats.B.goalsInf} />
-                 {/* Añadido Goles Igualdad */}
+                 {/* Fila Igualdad añadida */}
                  <StatRow label="Goles Igualdad" valA={stats.A.goalsEq} valB={stats.B.goalsEq} />
             </div>
 
-            {/* BOTONES INFERIORES AÑADIDOS */}
-            <div className="p-3 bg-white border-t border-slate-200 grid grid-cols-2 gap-3 shrink-0">
-                <Button className="bg-green-600 hover:bg-green-700 text-white font-black uppercase text-[10px] h-12 leading-tight shadow-md" onClick={() => alert("Evento Registrado (Simulación)")}>
+            {/* Botones al pie, visibles siempre */}
+            <div className="p-3 bg-white border-t border-slate-200 grid grid-cols-2 gap-3 shrink-0 mt-auto">
+                <Button className="bg-green-600 hover:bg-green-700 text-white font-black uppercase text-[10px] h-12 leading-tight shadow-md" onClick={() => alert("Simulación: Evento Registrado")}>
                     Registrar<br/>Evento
                 </Button>
                 <Button className="bg-orange-500 hover:bg-orange-600 text-white font-black uppercase text-[10px] h-12 leading-tight shadow-md" onClick={onExport}>
@@ -177,12 +175,13 @@ const StatsTable = ({ events, teamAName, teamBName, onExport }: { events: Event[
     )
 }
 
+// --- PORTERÍA ---
 const PorteriaAdvanced = ({ events }: { events: Event[] }) => {
   const [filter, setFilter] = useState<"ALL" | "WING" | "7M">("ALL");
 
   const relevantShots = useMemo(() => {
     return events.filter(e => {
-      if (e.team !== "B") return false; 
+      if (e.team !== "B") return false; // Solo Visitante
       if (!e.goalZone) return false;
       const isShot = ["GOL", "GOL 7M", "PARADA", "BLOCADO"].some(act => e.action.startsWith(act));
       if (!isShot) return false;
@@ -253,7 +252,7 @@ const PorteriaAdvanced = ({ events }: { events: Event[] }) => {
   )
 }
 
-// --- WIZARD MODIFICADO CON DEFENSA RIVAL Y CONTEXTO IGUALDAD ---
+// --- WIZARD MODIFICADO ---
 const ActionWizard = ({
   wizardState, activePlayer, isGoalkeeper, handleBack, currentAction, handleActionSelect,
   selectedContext, toggleContext, confirmEvent,
@@ -261,12 +260,14 @@ const ActionWizard = ({
   selectedDefense, setSelectedDefense 
 }: any) => (
   <div className="bg-slate-900 border border-slate-700 rounded-xl p-3 h-full flex flex-col relative overflow-hidden shadow-2xl min-h-0">
-    <div className="flex justify-between items-center mb-2 pb-2 border-b border-slate-700 shrink-0">
-        {wizardState !== "ACTION_SELECTION" && (
-            <Button variant="ghost" size="sm" onClick={handleBack} className="-ml-2 text-slate-400 hover:text-white h-8 w-8 p-0">
-            <ArrowLeft className="w-5 h-5" />
-            </Button>
-        )}
+    
+    {/* HEADER con Flecha de Atrás prominente */}
+    <div className="flex justify-between items-center mb-2 pb-2 border-b border-slate-700 shrink-0 min-h-[40px]">
+        {/* Lógica: Si estamos en DETAILS o en ACTION_SELECTION (y venimos de jugador), mostrar flecha */}
+        <Button variant="ghost" onClick={handleBack} className="text-slate-400 hover:text-white p-2 -ml-2">
+            <ArrowLeft className="w-6 h-6" /> <span className="sr-only">Atrás</span>
+        </Button>
+        
         <div className="flex-1 text-right">
              {wizardState === "ACTION_SELECTION" && <span className="text-[10px] text-slate-500 uppercase tracking-wider mr-2">Selecciona Acción</span>}
              {wizardState === "DETAILS" && <span className="text-sm text-green-400 font-black uppercase italic tracking-wider">{currentAction}</span>}
@@ -299,7 +300,7 @@ const ActionWizard = ({
       <div className="flex-1 flex flex-col h-full animate-in slide-in-from-right-10 overflow-hidden pb-14">
         <div className="flex-1 overflow-y-auto space-y-3 p-1 custom-scrollbar">
 
-          {/* DEFENSA RIVAL (Añadido en la parte superior como pediste) */}
+          {/* DEFENSA RIVAL (ARRIBA, COMO EN LA FOTO 7) */}
           <div className="bg-slate-950/80 p-2 rounded-lg border border-slate-800/50">
              <div className="text-[9px] font-bold text-slate-500 mb-1.5 uppercase tracking-widest flex items-center gap-1"><Shield className="w-3 h-3"/> Defensa Rival (Momento)</div>
              <div className="flex flex-wrap gap-1.5">
@@ -313,23 +314,31 @@ const ActionWizard = ({
              </div>
           </div>
 
-          {/* Contexto Táctico (Con IGUALDAD añadido) */}
+          {/* CONTEXTO TÁCTICO (INCLUYENDO IGUALDAD) */}
           {currentAction.startsWith("GOL") && (
               <div className="bg-slate-950/80 p-2 rounded-lg border border-slate-800/50">
                 <div className="text-[9px] font-bold text-slate-500 mb-1.5 uppercase tracking-widest flex items-center gap-1"><Filter className="w-3 h-3"/> Contexto Táctico</div>
-                <div className="grid grid-cols-2 gap-1.5">
-                    {CONTEXTS.map(ctx => {
+                {/* Grid 2x2 para parecerse a la foto */}
+                <div className="grid grid-cols-2 gap-2">
+                    {/* Primera fila: Igualdad y Superioridad */}
+                    {["Igualdad", "Superioridad"].map(ctx => {
                         const isActive = selectedContext.includes(ctx);
-                        let activeClass = "bg-blue-600 border-blue-500 text-white";
-                        if(ctx.includes("Sup")) activeClass = "bg-green-600 border-green-500 text-white";
-                        if(ctx.includes("Inf")) activeClass = "bg-red-600 border-red-500 text-white";
-                        if(ctx.includes("Igualdad")) activeClass = "bg-slate-100 text-slate-900 border-white font-black";
-
                         return (
                             <Button key={ctx} size="sm" variant="outline"
-                                className={`h-7 text-[9px] uppercase font-bold px-2 transition-all ${isActive ? activeClass : "bg-slate-900 border-slate-700 text-slate-400 hover:bg-slate-800"}`}
+                                className={`h-8 text-[10px] uppercase font-bold px-2 transition-all ${isActive ? "bg-slate-100 text-slate-900 border-white" : "bg-slate-900 border-slate-700 text-slate-400 hover:bg-slate-800"}`}
                                 onClick={() => toggleContext(ctx)}>
-                                {isActive && <CheckCircle2 className="w-3 h-3 mr-1"/>} {ctx}
+                                {ctx}
+                            </Button>
+                        )
+                    })}
+                     {/* Segunda fila: Inferioridad y Contraataque */}
+                    {["Inferioridad", "Contraataque"].map(ctx => {
+                        const isActive = selectedContext.includes(ctx);
+                        return (
+                            <Button key={ctx} size="sm" variant="outline"
+                                className={`h-8 text-[10px] uppercase font-bold px-2 transition-all ${isActive ? "bg-slate-100 text-slate-900 border-white" : "bg-slate-900 border-slate-700 text-slate-400 hover:bg-slate-800"}`}
+                                onClick={() => toggleContext(ctx)}>
+                                {ctx}
                             </Button>
                         )
                     })}
@@ -429,7 +438,6 @@ export default function MatchView() {
     if (team === "A") { setSelectedPlayerA(number); setSelectedPlayerB(null); }
     else { setSelectedPlayerB(number); setSelectedPlayerA(null); }
     setWizardState("ACTION_SELECTION")
-    // Pre-seleccionar la defensa por defecto del rival al abrir el wizard
     const activeTeam = team;
     const defaultRivalDefense = activeTeam === "A" ? defenseB : defenseA;
     resetWizard(defaultRivalDefense)
@@ -626,7 +634,6 @@ export default function MatchView() {
 
           <div className="flex flex-col gap-3 h-full min-h-0">
             <div className="h-[45%] min-h-0 shrink-0">
-                {/* BOTONES EXPORTAR E INFORME AÑADIDOS AQUI */}
                 <StatsTable events={events} teamAName={teamAName} teamBName={teamBName} onExport={exportData} />
             </div>
             <div className="h-[55%] min-h-0 relative shrink-0">
