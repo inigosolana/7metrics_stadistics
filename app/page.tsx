@@ -9,9 +9,8 @@ import { Switch } from "@/components/ui/switch"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import {
   Pause, Play, ArrowLeft, Trophy, History, Settings, Edit3, Target, Shield, Maximize2, Filter,
-  CheckCircle2, Trash2, Plus, FileBarChart
+  CheckCircle2, Trash2, Plus, Undo2, Download
 } from "lucide-react"
-import { HistoryPanel } from "@/components/history-panel"
 
 // --- TIPOS DE DATOS ---
 
@@ -48,6 +47,55 @@ const CONTEXTS = ["Igualdad", "Superioridad", "Inferioridad", "Contraataque"]
 
 // --- COMPONENTES AUXILIARES ---
 
+// 1. LIVE FEED / HISTORIAL (Ahora integrado para asegurar visibilidad de botones)
+const LiveFeedPanel = ({ events, onUndo, onExport }: { events: Event[], onUndo: () => void, onExport: () => void }) => {
+    return (
+        <div className="flex flex-col h-full bg-slate-900 border border-slate-800 rounded-lg overflow-hidden shadow-sm">
+            {/* Cabecera con Botones Visibles */}
+            <div className="bg-slate-950/80 px-3 py-2 border-b border-slate-800 flex justify-between items-center shrink-0">
+                <span className="text-[10px] font-bold uppercase text-slate-400 flex items-center gap-1">
+                    <History className="w-3 h-3"/> Live Feed
+                </span>
+                <div className="flex gap-1">
+                    <Button variant="ghost" size="icon" onClick={onUndo} className="h-6 w-6 text-slate-400 hover:text-red-400 hover:bg-slate-800" title="Deshacer último">
+                        <Undo2 className="w-4 h-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" onClick={onExport} className="h-6 w-6 text-slate-400 hover:text-green-400 hover:bg-slate-800" title="Exportar CSV">
+                        <Download className="w-4 h-4" />
+                    </Button>
+                </div>
+            </div>
+            
+            {/* Lista de Eventos */}
+            <div className="flex-1 overflow-y-auto custom-scrollbar p-0">
+                {events.length === 0 ? (
+                    <div className="h-full flex items-center justify-center text-[10px] text-slate-600 italic">
+                        Sin eventos registrados
+                    </div>
+                ) : (
+                    <div className="flex flex-col">
+                        {events.map((e, i) => (
+                            <div key={e.id} className={`flex items-center gap-2 px-3 py-2 border-b border-slate-800/50 text-xs ${i === 0 ? "bg-slate-800/30" : ""}`}>
+                                <span className="font-mono text-slate-500 text-[10px] w-8">{e.timeFormatted}</span>
+                                <div className={`w-1 h-8 rounded-full ${e.team === "A" ? "bg-blue-500" : "bg-amber-500"}`}></div>
+                                <div className="flex-1">
+                                    <div className="font-bold text-slate-200">
+                                        {e.action} <span className="font-normal text-slate-400">#{e.player}</span>
+                                    </div>
+                                    {e.context && e.context.length > 0 && (
+                                        <div className="text-[9px] text-slate-500 mt-0.5">{e.context.join(", ")}</div>
+                                    )}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+        </div>
+    )
+}
+
+// 2. HEADER MARCADOR
 const HeaderScoreboard = ({ localScore, visitorScore, teamAName, teamBName, time, isRunning, setIsRunning, formatTime, defenseA, defenseB }: any) => (
   <div className="bg-slate-900 border-b border-slate-800 px-6 py-2 flex items-center justify-between shadow-md shrink-0 z-30 relative h-20 box-border">
     {/* Equipo Local (A) - Izquierda */}
@@ -89,6 +137,7 @@ const HeaderScoreboard = ({ localScore, visitorScore, teamAName, teamBName, time
   </div>
 )
 
+// 3. GRID JUGADORES
 const PlayerGrid = ({ team, players, selectedPlayerA, selectedPlayerB, handlePlayerSelect, teamName }: any) => (
   <div className="bg-slate-900 border border-slate-800 rounded-lg p-2 h-full flex flex-col min-h-0 shadow-sm">
     <div className={`text-xs font-bold mb-2 uppercase tracking-wide flex items-center gap-2 px-1 shrink-0 ${team === "A" ? "text-blue-400" : "text-amber-400"}`}>
@@ -112,8 +161,8 @@ const PlayerGrid = ({ team, players, selectedPlayerA, selectedPlayerB, handlePla
   </div>
 )
 
-// --- COMPONENTE TABLA ESTADÍSTICAS ---
-const StatsTable = ({ events, teamAName, teamBName, onExport }: { events: Event[], teamAName: string, teamBName: string, onExport: () => void }) => {
+// 4. TABLA ESTADÍSTICAS (SIN BOTONES ABAJO)
+const StatsTable = ({ events, teamAName, teamBName }: { events: Event[], teamAName: string, teamBName: string }) => {
     const stats = useMemo(() => {
         const calculate = (team: "A" | "B") => ({
             goals: events.filter(e => e.team === team && e.action.startsWith("GOL")).length,
@@ -121,7 +170,6 @@ const StatsTable = ({ events, teamAName, teamBName, onExport }: { events: Event[
             saves: events.filter(e => e.team === team && e.action === "PARADA").length,
             turnovers: events.filter(e => e.team === team && e.action === "PÉRDIDA").length,
             goals7m: events.filter(e => e.team === team && e.action === "GOL 7M").length,
-            // Lógica para contextos
             goalsSup: events.filter(e => e.team === team && e.action.startsWith("GOL") && e.context?.includes("Superioridad")).length,
             goalsInf: events.filter(e => e.team === team && e.action.startsWith("GOL") && e.context?.includes("Inferioridad")).length,
             goalsEq: events.filter(e => e.team === team && e.action.startsWith("GOL") && (e.context?.includes("Igualdad") || !e.context || e.context.length === 0)).length,
@@ -144,7 +192,6 @@ const StatsTable = ({ events, teamAName, teamBName, onExport }: { events: Event[
         <div className="bg-white text-slate-900 rounded-lg overflow-hidden flex flex-col h-full shadow-lg text-sm border border-slate-300">
             <div className="bg-green-600 text-white text-center py-2 font-bold uppercase tracking-widest text-[11px]">Estadísticas en Tiempo Real</div>
             
-            {/* Header de Equipos - Sin el marcador gigante debajo */}
             <div className="flex border-b border-slate-300 bg-slate-100 font-bold text-xs py-2">
                 <div className="flex-1 text-center text-blue-700 truncate px-1">{teamAName}</div>
                 <div className="flex-1 text-center text-amber-700 truncate px-1">{teamBName}</div>
@@ -158,24 +205,15 @@ const StatsTable = ({ events, teamAName, teamBName, onExport }: { events: Event[
                  <div className="my-1 border-t border-slate-200"></div>
                  <StatRow label="Goles Superioridad" valA={stats.A.goalsSup} valB={stats.B.goalsSup} />
                  <StatRow label="Goles Inferioridad" valA={stats.A.goalsInf} valB={stats.B.goalsInf} />
-                 {/* Fila Igualdad añadida */}
                  <StatRow label="Goles Igualdad" valA={stats.A.goalsEq} valB={stats.B.goalsEq} />
             </div>
-
-            {/* Botones al pie, visibles siempre */}
-            <div className="p-3 bg-white border-t border-slate-200 grid grid-cols-2 gap-3 shrink-0 mt-auto">
-                <Button className="bg-green-600 hover:bg-green-700 text-white font-black uppercase text-[10px] h-12 leading-tight shadow-md" onClick={() => alert("Simulación: Evento Registrado")}>
-                    Registrar<br/>Evento
-                </Button>
-                <Button className="bg-orange-500 hover:bg-orange-600 text-white font-black uppercase text-[10px] h-12 leading-tight shadow-md" onClick={onExport}>
-                    Informe<br/>Ejecutivo
-                </Button>
-            </div>
+            
+            {/* BOTONES ELIMINADOS DE AQUÍ SEGÚN PETICIÓN */}
         </div>
     )
 }
 
-// --- PORTERÍA ---
+// 5. PORTERÍA AVANZADA
 const PorteriaAdvanced = ({ events }: { events: Event[] }) => {
   const [filter, setFilter] = useState<"ALL" | "WING" | "7M">("ALL");
 
@@ -252,7 +290,7 @@ const PorteriaAdvanced = ({ events }: { events: Event[] }) => {
   )
 }
 
-// --- WIZARD MODIFICADO ---
+// 6. WIZARD ACCIÓN
 const ActionWizard = ({
   wizardState, activePlayer, isGoalkeeper, handleBack, currentAction, handleActionSelect,
   selectedContext, toggleContext, confirmEvent,
@@ -261,9 +299,7 @@ const ActionWizard = ({
 }: any) => (
   <div className="bg-slate-900 border border-slate-700 rounded-xl p-3 h-full flex flex-col relative overflow-hidden shadow-2xl min-h-0">
     
-    {/* HEADER con Flecha de Atrás prominente */}
     <div className="flex justify-between items-center mb-2 pb-2 border-b border-slate-700 shrink-0 min-h-[40px]">
-        {/* Lógica: Si estamos en DETAILS o en ACTION_SELECTION (y venimos de jugador), mostrar flecha */}
         <Button variant="ghost" onClick={handleBack} className="text-slate-400 hover:text-white p-2 -ml-2">
             <ArrowLeft className="w-6 h-6" /> <span className="sr-only">Atrás</span>
         </Button>
@@ -300,7 +336,6 @@ const ActionWizard = ({
       <div className="flex-1 flex flex-col h-full animate-in slide-in-from-right-10 overflow-hidden pb-14">
         <div className="flex-1 overflow-y-auto space-y-3 p-1 custom-scrollbar">
 
-          {/* DEFENSA RIVAL (ARRIBA, COMO EN LA FOTO 7) */}
           <div className="bg-slate-950/80 p-2 rounded-lg border border-slate-800/50">
              <div className="text-[9px] font-bold text-slate-500 mb-1.5 uppercase tracking-widest flex items-center gap-1"><Shield className="w-3 h-3"/> Defensa Rival (Momento)</div>
              <div className="flex flex-wrap gap-1.5">
@@ -314,13 +349,10 @@ const ActionWizard = ({
              </div>
           </div>
 
-          {/* CONTEXTO TÁCTICO (INCLUYENDO IGUALDAD) */}
           {currentAction.startsWith("GOL") && (
               <div className="bg-slate-950/80 p-2 rounded-lg border border-slate-800/50">
                 <div className="text-[9px] font-bold text-slate-500 mb-1.5 uppercase tracking-widest flex items-center gap-1"><Filter className="w-3 h-3"/> Contexto Táctico</div>
-                {/* Grid 2x2 para parecerse a la foto */}
                 <div className="grid grid-cols-2 gap-2">
-                    {/* Primera fila: Igualdad y Superioridad */}
                     {["Igualdad", "Superioridad"].map(ctx => {
                         const isActive = selectedContext.includes(ctx);
                         return (
@@ -331,7 +363,6 @@ const ActionWizard = ({
                             </Button>
                         )
                     })}
-                     {/* Segunda fila: Inferioridad y Contraataque */}
                     {["Inferioridad", "Contraataque"].map(ctx => {
                         const isActive = selectedContext.includes(ctx);
                         return (
@@ -389,6 +420,7 @@ const ActionWizard = ({
   </div>
 )
 
+// --- MAIN COMPONENT ---
 export default function MatchView() {
   const [appState, setAppState] = useState<AppState>("SETUP")
 
@@ -410,7 +442,6 @@ export default function MatchView() {
   const [wizardState, setWizardState] = useState<WizardState>("IDLE")
   const [currentAction, setCurrentAction] = useState<string | null>(null)
   
-  // Estados para detalles de acción
   const [selectedCourtZone, setSelectedCourtZone] = useState<string | null>(null)
   const [selectedGoalZone, setSelectedGoalZone] = useState<number | null>(null)
   const [selectedContext, setSelectedContext] = useState<string[]>([])
@@ -657,14 +688,10 @@ export default function MatchView() {
                     <PlayerGrid team="B" players={teamBPlayers} selectedPlayerA={selectedPlayerA} selectedPlayerB={selectedPlayerB} handlePlayerSelect={handlePlayerSelect} teamName={teamBName} />
                 )}
             </div>
-            <div className="h-1/2 min-h-0 bg-slate-900 border border-slate-800 rounded-lg overflow-hidden flex flex-col shadow-sm">
-                <div className="bg-slate-950/80 px-3 py-1.5 border-b border-slate-800 flex justify-between items-center shrink-0">
-                    <span className="text-[10px] font-bold uppercase text-slate-400 flex items-center gap-1"><History className="w-3 h-3"/> Live Feed</span>
-                </div>
-                <div className="flex-1 overflow-hidden relative">
-                    <HistoryPanel events={events} teamAName={teamAName} teamBName={teamBName} onUndo={handleUndo} onExport={exportData} formatTime={formatTime} />
-                </div>
-            </div>
+            
+            {/* LIVE FEED INTEGRADO */}
+            <LiveFeedPanel events={events} onUndo={handleUndo} onExport={exportData} />
+            
           </div>
 
         </div>
