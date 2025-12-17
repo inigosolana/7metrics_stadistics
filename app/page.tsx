@@ -1,23 +1,16 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { Button } from "@/components/ui/button"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Dialog, DialogContent, DialogTrigger, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogTrigger, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Switch } from "@/components/ui/switch"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useIsMobile } from "@/hooks/use-mobile"
 import {
-  Pause,
-  Play,
-  ArrowLeft,
-  Users,
-  Activity,
-  History,
-  Trophy,
-  Settings,
-  Edit3,
-  Target,
-  Shield,
-  Maximize2,
+  Pause, Play, ArrowLeft, Trophy, History, Settings, Edit3, Target, Shield, Maximize2, Filter,
+  CheckCircle2, XCircle
 } from "lucide-react"
 import { HistoryPanel } from "@/components/history-panel"
 
@@ -29,17 +22,19 @@ type Player = {
   isGoalkeeper: boolean
 }
 
+type DefenseType = "6:0" | "5:1" | "3:2:1" | "4:2" | "Mixta" | "Presión"
+
 type Event = {
   id: string
   timestamp: number
+  timeFormatted: string
   player: number
   team: "A" | "B"
   action: string
-  specificAction?: string
   courtZone?: string
   goalZone?: number
-  defenseType?: string
-  context?: string[]
+  defenseAtMoment?: DefenseType
+  context?: string[] // "Superioridad", "Inferioridad", "Contraataque"
 }
 
 type WizardState = "IDLE" | "ACTION_SELECTION" | "DETAILS"
@@ -47,50 +42,25 @@ type AppState = "SETUP" | "MATCH"
 
 // --- CONSTANTES ---
 
-const COURT_ZONES = [
-  "Extremo Izq",
-  "Lateral Izq",
-  "Central",
-  "Lateral Der",
-  "Extremo Der",
-  "Pivote (6m)",
-  "Línea 9m Izq",
-  "Línea 9m Centro",
-  "Línea 9m Der",
-]
-
-const LOSS_TYPES = ["Error Pase", "Error Recepción", "Pasos", "Pisando", "Falta en Ataque"]
-const DEFENSE_TYPES = ["6:0", "5:1", "3:2:1", "4:2", "Mixta", "Presión Toda", "Otro"]
-const GAME_SITUATIONS = [
-  "Igualdad (6x6)",
-  "Superioridad (6x5)",
-  "Ataque 7x6",
-  "Inferioridad (5x6)",
-  "Inferioridad (4x6)",
-  "Contraataque",
-]
+const COURT_ZONES = ["Extremo Izq", "Lateral Izq", "Central", "Lateral Der", "Extremo Der", "Pivote", "9m"]
+const GOAL_ZONES = [1, 2, 3, 4, 5, 6, 7, 8, 9]
+const DEFENSE_TYPES: DefenseType[] = ["6:0", "5:1", "3:2:1", "4:2", "Mixta", "Presión"]
+const CONTEXTS = ["Superioridad", "Inferioridad", "Contraataque"]
 
 // --- COMPONENTES AUXILIARES ---
 
-// 1. HEADER MARCADOR
-const HeaderScoreboard = ({
-  localScore,
-  visitorScore,
-  teamAName,
-  teamBName,
-  time,
-  isRunning,
-  setIsRunning,
-  formatTime,
-}: any) => (
+// 1. HEADER MARCADOR (Con corrección Local Izq / Visitante Der)
+const HeaderScoreboard = ({ localScore, visitorScore, teamAName, teamBName, time, isRunning, setIsRunning, formatTime, defenseA, defenseB }: any) => (
   <div className="bg-slate-900 border-b border-slate-800 px-6 py-2 flex items-center justify-between shadow-md shrink-0 z-30 relative h-20 box-border">
-    {/* Equipo Izquierda (Ahora VISITANTE en layout visual, pero mantengo lógica A/B) */}
-    {/* Nota: En el layout de abajo pondremos Visitante a la izquierda. Aquí ajusto el orden visual */}
+    {/* Equipo Local (A) - Izquierda */}
     <div className="flex flex-col items-start min-w-[150px]">
-      <span className="text-xs text-amber-400 font-bold tracking-wider mb-1">VISITANTE (B)</span>
+      <div className="flex items-center gap-2 mb-1">
+         <span className="text-xs text-blue-400 font-bold tracking-wider">LOCAL (A)</span>
+         <span className="text-[9px] bg-blue-900/50 text-blue-300 px-1 rounded border border-blue-800">{defenseA}</span>
+      </div>
       <div className="flex items-baseline gap-3">
-        <span className="text-3xl font-bold text-white leading-none tabular-nums">{visitorScore}</span>
-        <span className="text-sm text-slate-400 truncate max-w-[120px]">{teamBName}</span>
+        <span className="text-3xl font-bold text-white leading-none tabular-nums">{localScore}</span>
+        <span className="text-sm text-slate-400 truncate max-w-[160px]">{teamAName}</span>
       </div>
     </div>
 
@@ -102,29 +72,22 @@ const HeaderScoreboard = ({
         </span>
       </div>
       <Button
-        size="sm"
-        variant="ghost"
-        onClick={() => setIsRunning(!isRunning)}
-        className={`mt-1 h-6 text-xs uppercase tracking-widest font-bold ${isRunning ? "text-red-400 hover:text-red-300 hover:bg-red-950/30" : "text-green-400 hover:text-green-300 hover:bg-green-950/30"}`}
+        size="sm" variant="ghost" onClick={() => setIsRunning(!isRunning)}
+        className={`mt-1 h-6 text-xs uppercase tracking-widest font-bold ${isRunning ? "text-red-400 hover:bg-red-950/30" : "text-green-400 hover:bg-green-950/30"}`}
       >
-        {isRunning ? (
-          <span className="flex items-center gap-1">
-            <Pause className="w-3 h-3" /> Pausar
-          </span>
-        ) : (
-          <span className="flex items-center gap-1">
-            <Play className="w-3 h-3" /> Iniciar
-          </span>
-        )}
+        {isRunning ? <span className="flex items-center gap-1"><Pause className="w-3 h-3" /> Pausar</span> : <span className="flex items-center gap-1"><Play className="w-3 h-3" /> Iniciar</span>}
       </Button>
     </div>
 
-    {/* Equipo Derecha (Ahora LOCAL) */}
+    {/* Equipo Visitante (B) - Derecha */}
     <div className="flex flex-col items-end min-w-[150px]">
-      <span className="text-xs text-blue-400 font-bold tracking-wider mb-1">LOCAL (A)</span>
+      <div className="flex items-center gap-2 mb-1 flex-row-reverse">
+        <span className="text-xs text-amber-400 font-bold tracking-wider">VISITANTE (B)</span>
+        <span className="text-[9px] bg-amber-900/50 text-amber-300 px-1 rounded border border-amber-800">{defenseB}</span>
+      </div>
       <div className="flex items-baseline gap-3 flex-row-reverse">
-        <span className="text-3xl font-bold text-white leading-none tabular-nums">{localScore}</span>
-        <span className="text-sm text-slate-400 truncate max-w-[120px]">{teamAName}</span>
+        <span className="text-3xl font-bold text-white leading-none tabular-nums">{visitorScore}</span>
+        <span className="text-sm text-slate-400 truncate max-w-[160px]">{teamBName}</span>
       </div>
     </div>
   </div>
@@ -132,10 +95,8 @@ const HeaderScoreboard = ({
 
 // 2. GRID DE JUGADORES
 const PlayerGrid = ({ team, players, selectedPlayerA, selectedPlayerB, handlePlayerSelect, teamName }: any) => (
-  <div className="bg-slate-900 border border-slate-800 rounded-lg p-2 h-full flex flex-col min-h-0">
-    <div
-      className={`text-xs font-bold mb-2 uppercase tracking-wide flex items-center gap-2 px-1 shrink-0 ${team === "A" ? "text-blue-400" : "text-amber-400"}`}
-    >
+  <div className="bg-slate-900 border border-slate-800 rounded-lg p-2 h-full flex flex-col min-h-0 shadow-sm">
+    <div className={`text-xs font-bold mb-2 uppercase tracking-wide flex items-center gap-2 px-1 shrink-0 ${team === "A" ? "text-blue-400" : "text-amber-400"}`}>
       <Trophy className="w-3 h-3" /> {teamName}
     </div>
     <div className="grid grid-cols-4 gap-2 overflow-y-auto pb-2 pr-1 custom-scrollbar flex-1 content-start min-h-0">
@@ -143,23 +104,12 @@ const PlayerGrid = ({ team, players, selectedPlayerA, selectedPlayerB, handlePla
         const isSelected = (team === "A" ? selectedPlayerA : selectedPlayerB) === player.number
         return (
           <Button
-            key={player.number}
-            variant="outline"
-            className={`h-12 sm:h-14 flex flex-col justify-center border-slate-700 relative transition-all duration-75 active:scale-95 ${
-              isSelected
-                ? team === "A"
-                  ? "bg-blue-600 border-blue-500 text-white ring-2 ring-blue-400/30"
-                  : "bg-amber-600 border-amber-500 text-white ring-2 ring-amber-400/30"
-                : "bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white"
-            }`}
+            key={player.number} variant="outline"
+            className={`h-12 sm:h-14 flex flex-col justify-center border-slate-700 relative transition-all duration-75 active:scale-95 ${isSelected ? (team === "A" ? "bg-blue-600 border-blue-500 text-white" : "bg-amber-600 border-amber-500 text-white") : "bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white"}`}
             onClick={() => handlePlayerSelect(team, player.number)}
           >
             <span className="text-lg font-bold leading-none">#{player.number}</span>
-            {player.isGoalkeeper && (
-              <span className="absolute -top-1.5 -right-1.5 text-[9px] bg-slate-900 text-slate-400 px-1.5 py-0.5 rounded-full border border-slate-700 font-mono">
-                GK
-              </span>
-            )}
+            {player.isGoalkeeper && <span className="absolute -top-1 -right-1 text-[8px] bg-slate-950 text-slate-400 px-1 rounded border border-slate-700">GK</span>}
           </Button>
         )
       })}
@@ -167,239 +117,241 @@ const PlayerGrid = ({ team, players, selectedPlayerA, selectedPlayerB, handlePla
   </div>
 )
 
-// 3. NUEVO COMPONENTE: TABLA DE ESTADÍSTICAS (CENTRAL SUPERIOR)
+// 3. TABLA DE ESTADÍSTICAS CENTRAL (Extendida)
 const StatsTable = ({ events, teamAName, teamBName }: { events: Event[], teamAName: string, teamBName: string }) => {
-    // Cálculos simples basados en eventos
-    const getStats = (team: "A" | "B") => {
-        return {
-            goals: events.filter(e => e.team === team && (e.action === "GOL" || e.action === "GOL CAMPO A CAMPO")).length,
-            saves: events.filter(e => e.team === team && e.action === "PARADA").length, // Nota: Parada se asigna al portero del equipo que defiende. Si el evento se registra al portero (ej: Team A Portero hace parada), es +1 para Team A.
+    const stats = useMemo(() => {
+        const calculate = (team: "A" | "B") => ({
+            goals: events.filter(e => e.team === team && e.action.startsWith("GOL")).length,
+            shots: events.filter(e => e.team === team && (e.action.startsWith("GOL") || e.action === "PARADA" || e.action === "FUERA" || e.action === "POSTE")).length,
+            saves: events.filter(e => e.team === team && e.action === "PARADA").length, // Asumiendo que la acción PARADA se registra al portero que la hace
             turnovers: events.filter(e => e.team === team && e.action === "PÉRDIDA").length,
-            missed: events.filter(e => e.team === team && (e.action === "FUERA" || e.action === "POSTE")).length,
-            // Ejemplo de métrica simulada o calculable si añades Exclusiones al evento
-            exclusions: 0 
-        }
-    }
+            goals7m: events.filter(e => e.team === team && e.action === "GOL 7M").length,
+            goalsSup: events.filter(e => e.team === team && e.action.startsWith("GOL") && e.context?.includes("Superioridad")).length,
+            goalsInf: events.filter(e => e.team === team && e.action.startsWith("GOL") && e.context?.includes("Inferioridad")).length,
+        })
+        return { A: calculate("A"), B: calculate("B") }
+    }, [events]);
 
-    const statsA = getStats("A");
-    const statsB = getStats("B");
+    const effA = stats.A.shots > 0 ? Math.round((stats.A.goals / stats.A.shots) * 100) : 0;
+    const effB = stats.B.shots > 0 ? Math.round((stats.B.goals / stats.B.shots) * 100) : 0;
 
-    // NOTA VISUAL: El usuario pidió Visitante (B) a la Izquierda en el layout general.
-    // Vamos a mantener la tabla consistente con el layout: Izquierda = B, Derecha = A.
+    const StatRow = ({ label, valA, valB, highlight = false }: any) => (
+        <div className={`flex items-center text-xs py-1.5 border-b border-slate-300/40 hover:bg-slate-50 ${highlight ? 'bg-slate-100 font-bold' : ''}`}>
+            <div className={`flex-1 text-center ${highlight ? 'text-blue-700' : ''}`}>{valA}</div>
+            <div className="w-32 text-center text-slate-500 uppercase text-[9px] font-semibold tracking-wider">{label}</div>
+            <div className={`flex-1 text-center ${highlight ? 'text-amber-700' : ''}`}>{valB}</div>
+        </div>
+    );
 
     return (
-        <div className="bg-slate-200 text-slate-900 rounded-lg overflow-hidden flex flex-col h-full shadow-lg text-sm border border-slate-400">
-            <div className="bg-green-600 text-white text-center py-2 font-black uppercase tracking-widest text-xs">
-                Estadísticas en Tiempo Real
-            </div>
-            
-            {/* Header Equipos */}
-            <div className="flex border-b border-slate-300 bg-slate-100 font-bold text-xs py-2">
-                <div className="flex-1 text-center text-amber-700">{teamBName} (Vis)</div>
-                <div className="flex-1 text-center text-blue-700">{teamAName} (Loc)</div>
+        <div className="bg-white text-slate-900 rounded-lg overflow-hidden flex flex-col h-full shadow-lg text-sm border border-slate-300">
+            <div className="bg-slate-800 text-white text-center py-1.5 font-bold uppercase tracking-widest text-[10px]">Estadísticas Tiempo Real</div>
+            <div className="flex border-b border-slate-300 bg-slate-100 font-bold text-xs py-1.5">
+                <div className="flex-1 text-center text-blue-700 truncate px-1">{teamAName}</div>
+                <div className="flex-1 text-center text-amber-700 truncate px-1">{teamBName}</div>
             </div>
 
-            {/* Score Row */}
-            <div className="flex items-center justify-between px-4 py-2 border-b border-slate-300 bg-white">
-                <span className="text-2xl font-black text-amber-600">{statsB.goals}</span>
-                <span className="text-[10px] font-bold uppercase text-slate-500">Goles</span>
-                <span className="text-2xl font-black text-blue-600">{statsA.goals}</span>
+            {/* Marcador Grande */}
+            <div className="flex items-center justify-around px-4 py-1 border-b border-slate-300 bg-slate-50/50">
+                <span className="text-3xl font-black text-blue-600">{stats.A.goals}</span>
+                 <div className="flex flex-col items-center text-[9px] text-slate-400 font-bold relative top-1">
+                    <span>VS</span>
+                 </div>
+                <span className="text-3xl font-black text-amber-600">{stats.B.goals}</span>
             </div>
 
-            {/* Stats Rows */}
-            <div className="flex-1 flex flex-col justify-center">
-                 {/* Paradas */}
-                 <div className="flex items-center text-xs py-1.5 border-b border-slate-300/50 hover:bg-slate-50">
-                    <div className="flex-1 text-center font-bold">{statsB.saves}</div>
-                    <div className="w-24 text-center text-slate-500 uppercase text-[9px]">Paradas</div>
-                    <div className="flex-1 text-center font-bold">{statsA.saves}</div>
-                </div>
-                {/* Pérdidas */}
-                <div className="flex items-center text-xs py-1.5 border-b border-slate-300/50 hover:bg-slate-50">
-                    <div className="flex-1 text-center font-bold">{statsB.turnovers}</div>
-                    <div className="w-24 text-center text-slate-500 uppercase text-[9px]">Pérdidas</div>
-                    <div className="flex-1 text-center font-bold">{statsA.turnovers}</div>
-                </div>
-                {/* Fallos/Fuera */}
-                <div className="flex items-center text-xs py-1.5 border-b border-slate-300/50 hover:bg-slate-50">
-                    <div className="flex-1 text-center font-bold">{statsB.missed}</div>
-                    <div className="w-24 text-center text-slate-500 uppercase text-[9px]">Tiros Fuera</div>
-                    <div className="flex-1 text-center font-bold">{statsA.missed}</div>
-                </div>
-                 {/* Exclusiones (Placeholder ya que no está en el tipo Evento original pero estaba en la foto) */}
-                 <div className="flex items-center text-xs py-1.5 hover:bg-slate-50">
-                    <div className="flex-1 text-center font-bold text-slate-400">-</div>
-                    <div className="w-24 text-center text-slate-500 uppercase text-[9px]">Exclusiones</div>
-                    <div className="flex-1 text-center font-bold text-slate-400">-</div>
-                </div>
-            </div>
-
-            {/* Botones estilo foto */}
-            <div className="flex p-2 gap-2 mt-auto bg-slate-100 border-t border-slate-300">
-                <div className="flex-1 bg-green-600 text-white text-[10px] font-bold py-2 rounded text-center shadow cursor-pointer hover:bg-green-500">
-                    REGISTRAR<br/>EVENTO
-                </div>
-                <div className="flex-1 bg-amber-500 text-white text-[10px] font-bold py-2 rounded text-center shadow cursor-pointer hover:bg-amber-400">
-                    INFORME<br/>EJECUTIVO
-                </div>
+            <div className="flex-1 flex flex-col overflow-y-auto custom-scrollbar bg-white">
+                 <StatRow label="Efectividad Tiro" valA={`${effA}%`} valB={`${effB}%`} highlight />
+                 <StatRow label="Paradas (Portero)" valA={stats.A.saves} valB={stats.B.saves} />
+                 <StatRow label="Pérdidas" valA={stats.A.turnovers} valB={stats.B.turnovers} />
+                 <div className="my-1 border-t border-slate-100"></div>
+                 <StatRow label="Goles 7m" valA={`${stats.A.goals7m}`} valB={`${stats.B.goals7m}`} />
+                 <StatRow label="Goles Superioridad" valA={stats.A.goalsSup} valB={stats.B.goalsSup} />
+                 <StatRow label="Goles Inferioridad" valA={stats.A.goalsInf} valB={stats.B.goalsInf} />
             </div>
         </div>
     )
 }
 
-// 4. PORTERÍA RESPONSIVE
-const PorteriaResponsive = ({ events }: { events: Event[] }) => {
-  const shots = events.filter((e) => {
-    if (!e.goalZone) return false
-    // Mostramos todos los tiros a portería (de ambos equipos)
-    return ["GOL", "PARADA", "GOL ENCAJADO", "BLOCADO"].includes(e.action)
-  })
+// 4. PORTERÍA AVANZADA (Mapa de Calor + Filtros + Detalle Jugador)
+const PorteriaAdvanced = ({ events }: { events: Event[] }) => {
+  const [filter, setFilter] = useState<"ALL" | "WING" | "7M">("ALL");
 
-  // Agrupar por zona
-  const getZoneStats = (zone: number) => {
-    const zoneShots = shots.filter((s) => s.goalZone === zone)
-    const count = zoneShots.length
-    const goals = zoneShots.filter((s) => s.action.includes("GOL")).length
-    const saves = zoneShots.filter((s) => s.action === "PARADA" || s.action === "BLOCADO").length
-    // Porcentaje de efectividad del lanzador (Goles / Tiros Totales)
-    const goalPct = count > 0 ? Math.round((goals / count) * 100) : 0
-    return { count, goals, saves, goalPct }
+  // Filtrar eventos relevantes (tiros a puerta con zona definida)
+  const relevantShots = useMemo(() => {
+    return events.filter(e => {
+      if (!e.goalZone) return false;
+      const isShot = ["GOL", "GOL 7M", "PARADA", "BLOCADO"].some(act => e.action.startsWith(act));
+      if (!isShot) return false;
+
+      if (filter === "WING" && !e.courtZone?.includes("Extremo")) return false;
+      if (filter === "7M" && !e.action.includes("7M")) return false;
+
+      return true;
+    });
+  }, [events, filter]);
+
+  // Calcular mapa de calor (máximo de goles en una zona para la escala de color)
+  const heatmapScale = useMemo(() => {
+      const goalsPerZone = GOAL_ZONES.map(z => relevantShots.filter(s => s.goalZone === z && s.action.startsWith("GOL")).length);
+      const maxGoals = Math.max(...goalsPerZone, 1); // Evitar división por cero
+      return { goalsPerZone, maxGoals };
+  }, [relevantShots]);
+
+
+  const getHeatmapColor = (zoneIndex: number) => {
+      const goals = heatmapScale.goalsPerZone[zoneIndex];
+      const intensity = goals / heatmapScale.maxGoals; // 0 a 1
+      // Interpolación simple de rojo. Más goles = más opaco y rojo brillante.
+      if (goals === 0) return "rgba(30, 41, 59, 0.5)"; // Slate-800 transparente
+      return `rgba(220, 38, 38, ${0.3 + (intensity * 0.5)})`; // Red-600 con opacidad variable
   }
 
-  const zones = [1, 2, 3, 4, 5, 6, 7, 8, 9]
-
   return (
-    <div className="w-full h-full flex flex-col bg-slate-800/80 rounded-lg p-2 border border-slate-700">
-      <div className="text-[10px] text-slate-400 mb-2 text-center font-bold uppercase tracking-widest">
-        Mapa de Calor de Tiros
+    <div className="w-full h-full flex flex-col bg-slate-900 rounded-lg border border-slate-800 overflow-hidden shadow-sm">
+      {/* Filtros Superior */}
+      <div className="flex p-1 bg-slate-950 border-b border-slate-800 gap-1 shrink-0">
+        <Button variant="ghost" size="sm" onClick={() => setFilter("ALL")} className={`flex-1 text-[9px] h-7 font-bold uppercase ${filter === "ALL" ? "bg-slate-800 text-white" : "text-slate-400"}`}>Todos</Button>
+        <Button variant="ghost" size="sm" onClick={() => setFilter("WING")} className={`flex-1 text-[9px] h-7 font-bold uppercase ${filter === "WING" ? "bg-slate-800 text-white" : "text-slate-400"}`}>Extremos</Button>
+        <Button variant="ghost" size="sm" onClick={() => setFilter("7M")} className={`flex-1 text-[9px] h-7 font-bold uppercase ${filter === "7M" ? "bg-slate-800 text-white" : "text-slate-400"}`}>7m</Button>
       </div>
-      <div className="flex-1 grid grid-cols-3 gap-1 min-h-0">
-        {zones.map((z) => {
-          const stats = getZoneStats(z)
-          // Opacidad basada en volumen de tiros
-          const intensity = shots.length > 0 ? Math.min((stats.count / shots.length) * 3, 1) : 0
-          
+
+      <div className="text-[10px] text-slate-400 py-1 text-center font-bold uppercase tracking-widest shrink-0 flex items-center justify-center gap-2">
+        <Target className="w-3 h-3" /> Mapa de Tiros {filter !== "ALL" && `(${filter})`}
+      </div>
+
+      {/* Grid de la Portería */}
+      <div className="flex-1 grid grid-cols-3 gap-0.5 p-1 min-h-0 relative">
+        {/* Postes visuales (opcional, para dar contexto) */}
+        <div className="absolute inset-y-1 left-0 w-1 bg-slate-600 rounded-l pointer-events-none"></div>
+        <div className="absolute inset-y-1 right-0 w-1 bg-slate-600 rounded-r pointer-events-none"></div>
+        <div className="absolute inset-x-1 top-0 h-1 bg-slate-600 rounded-t pointer-events-none"></div>
+
+        {GOAL_ZONES.map((z, index) => {
+          const shotsInZone = relevantShots.filter(s => s.goalZone === z);
           return (
             <div
               key={z}
-              className="relative rounded border border-slate-600/50 flex flex-col items-center justify-center"
-              style={{ backgroundColor: `rgba(59, 130, 246, ${intensity * 0.6})` }}
+              className="relative rounded-sm border border-white/10 flex flex-wrap content-center justify-center items-center gap-0.5 p-0.5 overflow-hidden transition-colors duration-300"
+              style={{ backgroundColor: getHeatmapColor(index) }}
             >
-              <span className="absolute top-1 left-1 text-[8px] text-slate-500">#{z}</span>
-              <div className="text-center z-10">
-                <span className="text-xl font-bold text-white">{stats.goalPct}%</span>
-                <div className="text-[8px] text-slate-300">
-                    {stats.goals}G / {stats.saves}P
-                </div>
-              </div>
+              <span className="absolute top-0.5 left-0.5 text-[7px] text-slate-500/50 pointer-events-none">{z}</span>
+              
+              {/* Renderizar marcadores de tiro individuales */}
+              {shotsInZone.slice(0, 9).map(shot => { // Limitar a 9 para no saturar
+                  const isGoal = shot.action.startsWith("GOL");
+                  return (
+                    <div key={shot.id} className={`w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-black border ${isGoal ? 'bg-green-500 text-black border-green-300 shadow-[0_0_5px_rgba(34,197,94,0.5)]' : 'bg-red-500 text-white border-red-300'} `} title={`${shot.action} - Jugador ${shot.player}`}>
+                        {shot.player}
+                    </div>
+                  )
+              })}
+              {shotsInZone.length > 9 && <span className="text-[8px] font-bold text-white">+{shotsInZone.length - 9}</span>}
             </div>
           )
         })}
+      </div>
+      <div className="flex justify-center gap-4 pb-1 text-[8px] text-slate-400 shrink-0 bg-slate-950/50">
+          <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-green-500"></div> Gol</div>
+          <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-red-500"></div> Fallo/Parada</div>
       </div>
     </div>
   )
 }
 
-// 5. WIZARD DE ACCIÓN
+
+// 5. WIZARD DE ACCIÓN (Actualizado con 7m y Contextos)
 const ActionWizard = ({
-  wizardState,
-  activePlayer,
-  isGoalkeeper,
-  handleBack,
-  currentAction,
-  handleActionSelect,
-  selectedDefenseType,
-  setSelectedDefenseType,
-  selectedLossType,
-  setSelectedLossType,
-  selectedCourtZone,
-  setSelectedCourtZone,
-  selectedGoalZone,
-  setSelectedGoalZone,
-  selectedContext,
-  toggleContext,
-  confirmEvent,
+  wizardState, activePlayer, isGoalkeeper, handleBack, currentAction, handleActionSelect,
+  selectedContext, toggleContext, confirmEvent,
+  selectedCourtZone, setSelectedCourtZone, selectedGoalZone, setSelectedGoalZone
 }: any) => (
-  <div className="bg-slate-900 border border-slate-700 rounded-xl p-4 h-full flex flex-col relative overflow-hidden shadow-2xl">
-    
-    {/* SELECCIÓN DE ACCIÓN */}
-    {wizardState === "ACTION_SELECTION" && (
-      <div className="flex-1 flex flex-col animate-in fade-in zoom-in-95 duration-150 min-h-0">
-        <div className="flex justify-between items-center mb-4 pb-2 border-b border-slate-700 shrink-0">
-          <Button variant="ghost" size="sm" onClick={handleBack} className="text-slate-400 hover:text-white -ml-2 hover:bg-slate-800">
-            <ArrowLeft className="w-4 h-4 mr-1" /> Atrás
-          </Button>
-          <div className="text-right">
-            <span className="text-[10px] text-slate-500 block uppercase font-bold tracking-wider">Jugador</span>
-            <span className="font-black text-white text-xl italic">
-              #{activePlayer?.player}
-            </span>
-          </div>
+  <div className="bg-slate-900 border border-slate-700 rounded-xl p-3 h-full flex flex-col relative overflow-hidden shadow-2xl min-h-0">
+    {/* HEADER WIZARD */}
+    <div className="flex justify-between items-center mb-2 pb-2 border-b border-slate-700 shrink-0">
+        {wizardState !== "ACTION_SELECTION" && (
+            <Button variant="ghost" size="sm" onClick={handleBack} className="-ml-2 text-slate-400 hover:text-white h-8 w-8 p-0">
+            <ArrowLeft className="w-5 h-5" />
+            </Button>
+        )}
+        <div className="flex-1 text-right">
+             {wizardState === "ACTION_SELECTION" && <span className="text-[10px] text-slate-500 uppercase tracking-wider mr-2">Selecciona Acción</span>}
+             {wizardState === "DETAILS" && <span className="text-sm text-green-400 font-black uppercase italic tracking-wider">{currentAction}</span>}
         </div>
-        <div className="grid grid-cols-2 gap-3 flex-1 content-start overflow-y-auto pb-4 custom-scrollbar">
+        <div className="flex flex-col items-end ml-2 border-l border-slate-700 pl-2">
+            <span className="text-[9px] text-slate-500 uppercase font-bold">Jugador</span>
+            <span className="font-black text-white text-lg leading-none">#{activePlayer?.player}</span>
+        </div>
+    </div>
+
+    {/* PASO 1: SELECCIÓN DE ACCIÓN */}
+    {wizardState === "ACTION_SELECTION" && (
+      <div className="flex-1 grid grid-cols-2 gap-2 content-start overflow-y-auto custom-scrollbar p-1 animate-in fade-in zoom-in-95">
            {!isGoalkeeper ? (
              <>
-               <Button className="h-20 text-xl font-black bg-green-600 hover:bg-green-500 text-white shadow-lg col-span-2 border-b-4 border-green-800 active:translate-y-1 active:border-0" onClick={() => handleActionSelect("GOL")}>GOL</Button>
-               <Button className="h-16 text-lg font-black bg-blue-600 hover:bg-blue-500 text-white shadow-lg border-b-4 border-blue-800 active:translate-y-1 active:border-0" onClick={() => handleActionSelect("PARADA")}>PARADA (Rival)</Button>
-               <Button className="h-16 text-lg font-black bg-amber-600 hover:bg-amber-500 text-white shadow-lg border-b-4 border-amber-800 active:translate-y-1 active:border-0" onClick={() => handleActionSelect("FUERA")}>FUERA</Button>
-               <Button className="h-14 font-bold bg-red-600 hover:bg-red-500 text-white col-span-2 border-b-4 border-red-800" onClick={() => handleActionSelect("PÉRDIDA")}>PÉRDIDA / ERROR</Button>
+               <Button className="h-16 text-xl font-black bg-green-600 hover:bg-green-500 col-span-2 border-b-4 border-green-800 active:border-0 active:translate-y-1 transition-all" onClick={() => handleActionSelect("GOL")}>GOL</Button>
+               <Button className="h-12 text-sm font-bold bg-green-700 hover:bg-green-600 border-b-4 border-green-900 active:border-0 active:translate-y-1 transition-all" onClick={() => handleActionSelect("GOL 7M")}>GOL 7m</Button>
+               <Button className="h-12 text-sm font-bold bg-red-700 hover:bg-red-600 border-b-4 border-red-900 active:border-0 active:translate-y-1 transition-all" onClick={() => handleActionSelect("FALLO 7M")}>FALLO 7m</Button>
+               <Button className="h-14 text-base font-black bg-blue-600 hover:bg-blue-500 border-b-4 border-blue-800 active:border-0 active:translate-y-1 transition-all" onClick={() => handleActionSelect("PARADA")}>PARADA (Rival)</Button>
+               <Button className="h-14 text-base font-black bg-amber-600 hover:bg-amber-500 border-b-4 border-amber-800 active:border-0 active:translate-y-1 transition-all" onClick={() => handleActionSelect("FUERA")}>FUERA / POSTE</Button>
+               <Button className="h-12 text-sm font-bold bg-red-600 hover:bg-red-500 col-span-2 border-b-4 border-red-800 active:border-0 active:translate-y-1 transition-all" onClick={() => handleActionSelect("PÉRDIDA")}>PÉRDIDA / ERROR</Button>
+               <Button variant="outline" className="h-10 text-xs border-slate-700 text-slate-400 hover:text-white hover:bg-slate-800 col-span-2" onClick={() => handleActionSelect("ASISTENCIA")}>Asistencia / Otro</Button>
              </>
            ) : (
-             <Button className="h-24 text-2xl font-black bg-blue-600 hover:bg-blue-500 text-white col-span-2" onClick={() => handleActionSelect("PARADA")}>PARADA</Button>
+             <Button className="h-24 text-3xl font-black bg-blue-600 hover:bg-blue-500 col-span-2 border-b-4 border-blue-800" onClick={() => handleActionSelect("PARADA")}>PARADA</Button>
            )}
-        </div>
       </div>
     )}
 
-    {/* DETALLES DE LA ACCIÓN */}
+    {/* PASO 2: DETALLES (Zona, Contexto) */}
     {wizardState === "DETAILS" && (
-      <div className="flex-1 flex flex-col h-full animate-in slide-in-from-right-4 duration-200 min-h-0">
-        <div className="flex justify-between items-center mb-3 pb-2 border-b border-slate-700 shrink-0">
-          <Button variant="ghost" size="sm" onClick={handleBack} className="-ml-2 text-slate-400 hover:text-white hover:bg-slate-800">
-            <ArrowLeft className="w-4 h-4" />
-          </Button>
-          <span className="text-green-400 font-black tracking-wider text-xl italic">{currentAction}</span>
-        </div>
-        
-        <div className="flex-1 overflow-y-auto space-y-4 pb-20 custom-scrollbar pr-2">
-          
-          {/* ZONA DE PISTA */}
-          <div className="bg-slate-950/50 p-3 rounded-xl border border-slate-800">
-            <div className="text-[10px] font-black text-slate-500 mb-2 uppercase tracking-widest">Zona Lanzamiento</div>
-            <div className="grid grid-cols-3 gap-1">
-              {COURT_ZONES.map((z) => (
-                <Button
-                  key={z}
-                  size="sm"
-                  className={`h-8 text-[8px] font-bold leading-tight border transition-all ${
-                    selectedCourtZone === z 
-                    ? "bg-blue-600 text-white border-blue-400" 
-                    : "bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700"
-                  }`}
-                  onClick={() => setSelectedCourtZone(z)}
-                >
-                  {z}
-                </Button>
-              ))}
-            </div>
-          </div>
+      <div className="flex-1 flex flex-col h-full animate-in slide-in-from-right-10 overflow-hidden pb-14">
+        <div className="flex-1 overflow-y-auto space-y-3 p-1 custom-scrollbar">
 
-          {/* PORTERÍA (VISUAL) PARA SELECCIÓN */}
-          {["GOL", "PARADA", "FUERA", "POSTE", "BLOCADO", "GOL ENCAJADO"].includes(currentAction || "") && (
-            <div className="bg-slate-950/50 p-3 rounded-xl border border-slate-800">
-              <div className="text-[10px] font-black text-slate-500 mb-2 uppercase tracking-widest text-center">
-                Zona Portería
+          {/* Contexto Táctico (Superioridad, etc) - Para Goles */}
+          {currentAction.startsWith("GOL") && (
+              <div className="bg-slate-950/80 p-2 rounded-lg border border-slate-800/50">
+                <div className="text-[9px] font-bold text-slate-500 mb-1.5 uppercase tracking-widest flex items-center gap-1"><Filter className="w-3 h-3"/> Contexto Táctico</div>
+                <div className="flex flex-wrap gap-1.5">
+                    {CONTEXTS.map(ctx => {
+                        const isActive = selectedContext.includes(ctx);
+                        return (
+                            <Button key={ctx} size="sm" variant="outline"
+                                className={`h-7 text-[9px] uppercase font-bold px-2 transition-all ${isActive ? (ctx.includes("Sup") ? "bg-green-600 border-green-500 text-white" : ctx.includes("Inf") ? "bg-red-600 border-red-500 text-white" : "bg-blue-600 border-blue-500 text-white") : "bg-slate-900 border-slate-700 text-slate-400 hover:bg-slate-800"}`}
+                                onClick={() => toggleContext(ctx)}>
+                                {isActive && <CheckCircle2 className="w-3 h-3 mr-1"/>} {ctx}
+                            </Button>
+                        )
+                    })}
+                </div>
               </div>
-              <div className="aspect-square max-w-[140px] mx-auto grid grid-cols-3 gap-1 bg-slate-900 p-1 rounded-lg border border-slate-800 shadow-inner">
-                {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((z) => (
-                  <Button
-                    key={z}
-                    variant="ghost"
-                    className={`h-full w-full text-lg font-black rounded transition-all ${
-                      selectedGoalZone === z 
-                      ? "bg-green-500 text-black shadow-[0_0_20px_rgba(34,197,94,0.6)] scale-110 z-10" 
-                      : "bg-slate-800 text-slate-600 hover:bg-slate-700 hover:text-slate-300"
-                    }`}
+          )}
+
+          {/* Zona de Lanzamiento (Si no es 7m) */}
+          {!currentAction.includes("7M") && ["GOL", "PARADA", "FUERA", "PÉRDIDA"].includes(currentAction) && (
+            <div className="bg-slate-950/80 p-2 rounded-lg border border-slate-800/50">
+              <div className="text-[9px] font-bold text-slate-500 mb-1.5 uppercase tracking-widest">Zona Origen</div>
+              <div className="grid grid-cols-3 gap-1">
+                {COURT_ZONES.map((z) => (
+                  <Button key={z} size="sm"
+                    className={`h-7 text-[8px] font-bold leading-tight border transition-all ${selectedCourtZone === z ? "bg-blue-600 text-white border-blue-400 shadow-sm" : "bg-slate-800/50 text-slate-300 border-slate-700 hover:bg-slate-700"}`}
+                    onClick={() => setSelectedCourtZone(z)}
+                  >
+                    {z}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Zona Portería (Para Tiros) */}
+          {(currentAction.startsWith("GOL") || ["PARADA", "FUERA", "FALLO 7M"].includes(currentAction)) && (
+            <div className="bg-slate-950/80 p-2 rounded-lg border border-slate-800/50 flex flex-col items-center">
+              <div className="text-[9px] font-bold text-slate-500 mb-1.5 uppercase tracking-widest">Zona Definición</div>
+              <div className="aspect-square w-full max-w-[120px] grid grid-cols-3 gap-0.5 bg-slate-800 p-0.5 rounded border border-slate-700 shadow-inner">
+                {GOAL_ZONES.map((z) => (
+                  <Button key={z} variant="ghost"
+                    className={`h-full w-full text-base font-black rounded-sm transition-all p-0 ${selectedGoalZone === z ? (currentAction.startsWith("GOL") ? "bg-green-500 text-black shadow-[inset_0_0_10px_rgba(0,0,0,0.2)]" : "bg-red-500 text-white") : "bg-slate-700/50 text-slate-500 hover:bg-slate-600 hover:text-slate-200"}`}
                     onClick={() => setSelectedGoalZone(z)}
                   >
                     {z}
@@ -410,13 +362,10 @@ const ActionWizard = ({
           )}
         </div>
 
-        <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-slate-900 to-transparent">
-          <Button
-            size="lg"
-            className="w-full h-12 bg-green-600 hover:bg-green-500 text-white shadow-2xl font-black tracking-widest text-lg italic uppercase border-t border-green-400/30"
-            onClick={() => confirmEvent()}
-          >
-            CONFIRMAR
+        {/* Botón Confirmar Flotante */}
+        <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-slate-900 via-slate-900 to-transparent">
+          <Button size="lg" className="w-full h-11 bg-green-600 hover:bg-green-500 text-white shadow-xl font-black tracking-[0.15em] text-base uppercase border-t border-green-400/20 transition-transform active:scale-[0.98]" onClick={confirmEvent}>
+            CONFIRMAR <CheckCircle2 className="w-5 h-5 ml-2 animate-pulse"/>
           </Button>
         </div>
       </div>
@@ -424,358 +373,255 @@ const ActionWizard = ({
   </div>
 )
 
-// --- COMPONENTE PRINCIPAL ---
 
-export default function EventPad() {
+// --- COMPONENTE PRINCIPAL (LAYOUT GLOBAL) ---
+
+export default function MatchView() {
   const [appState, setAppState] = useState<AppState>("SETUP")
 
-  const [teamAName, setTeamAName] = useState("Equipo Local")
-  const [teamBName, setTeamBName] = useState("Equipo Visitante")
-  const [teamAPlayers, setTeamAPlayers] = useState<Player[]>(
-    Array.from({ length: 16 }, (_, i) => ({ number: i + 1, name: `Jugador ${i + 1}`, isGoalkeeper: i === 0 })),
-  )
-  const [teamBPlayers, setTeamBPlayers] = useState<Player[]>(
-    Array.from({ length: 16 }, (_, i) => ({ number: i + 1, name: `Jugador ${i + 1}`, isGoalkeeper: i === 0 })),
-  )
+  // Estado de los equipos y configuración inicial
+  const [teamAName, setTeamAName] = useState("Local A")
+  const [teamBName, setTeamBName] = useState("Visitante B")
+  const [defenseA, setDefenseA] = useState<DefenseType>("6:0")
+  const [defenseB, setDefenseB] = useState<DefenseType>("6:0")
+  const [teamAPlayers, setTeamAPlayers] = useState<Player[]>(Array.from({ length: 14 }, (_, i) => ({ number: i + 1, name: `Jugador A${i + 1}`, isGoalkeeper: i === 0 || i === 12 })))
+  const [teamBPlayers, setTeamBPlayers] = useState<Player[]>(Array.from({ length: 14 }, (_, i) => ({ number: i + 1, name: `Jugador B${i + 1}`, isGoalkeeper: i === 0 || i === 12 })))
 
-  const [editingPlayer, setEditingPlayer] = useState<{ team: "A" | "B"; index: number } | null>(null)
-  const [tempPlayerName, setTempPlayerName] = useState("")
-  const [tempPlayerNumber, setTempPlayerNumber] = useState("")
-  const [tempPlayerPosition, setTempPlayerPosition] = useState<"field" | "goalkeeper">("field")
-
-  const [selectedPlayerA, setSelectedPlayerA] = useState<number | null>(null)
-  const [selectedPlayerB, setSelectedPlayerB] = useState<number | null>(null)
+  // Estado del partido
   const [localScore, setLocalScore] = useState(0)
   const [visitorScore, setVisitorScore] = useState(0)
   const [time, setTime] = useState(0)
   const [isRunning, setIsRunning] = useState(false)
   const [events, setEvents] = useState<Event[]>([])
 
+  // Estado de interacción (Selección, Wizard)
+  const [selectedPlayerA, setSelectedPlayerA] = useState<number | null>(null)
+  const [selectedPlayerB, setSelectedPlayerB] = useState<number | null>(null)
   const [wizardState, setWizardState] = useState<WizardState>("IDLE")
   const [currentAction, setCurrentAction] = useState<string | null>(null)
+  
+  // Estado de detalles de acción
   const [selectedCourtZone, setSelectedCourtZone] = useState<string | null>(null)
   const [selectedGoalZone, setSelectedGoalZone] = useState<number | null>(null)
   const [selectedContext, setSelectedContext] = useState<string[]>([])
-  const [selectedLossType, setSelectedLossType] = useState<string | null>(null)
-  const [selectedDefenseType, setSelectedDefenseType] = useState<string | null>(null)
 
-  const isMobile = useIsMobile()
-  const [activeTab, setActiveTab] = useState("action")
-
+  // Cronómetro
   useEffect(() => {
     let interval: NodeJS.Timeout
-    if (isRunning) {
-      interval = setInterval(() => {
-        setTime((prev) => prev + 1)
-      }, 1000)
-    }
+    if (isRunning) interval = setInterval(() => setTime((prev) => prev + 1), 1000)
     return () => clearInterval(interval)
   }, [isRunning])
 
   const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60)
-    const secs = seconds % 60
-    return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`
+    const mins = Math.floor(seconds / 60).toString().padStart(2, "0")
+    const secs = (seconds % 60).toString().padStart(2, "0")
+    return `${mins}:${secs}`
   }
 
-  const getActiveTeamAndPlayer = () => {
-    if (selectedPlayerA !== null) return { team: "A" as const, player: selectedPlayerA }
-    if (selectedPlayerB !== null) return { team: "B" as const, player: selectedPlayerB }
+  // --- LÓGICA DE INTERACCIÓN ---
+
+  const getActivePlayerInfo = () => {
+    if (selectedPlayerA) return { team: "A" as const, player: selectedPlayerA, isGK: teamAPlayers.find(p=>p.number===selectedPlayerA)?.isGoalkeeper }
+    if (selectedPlayerB) return { team: "B" as const, player: selectedPlayerB, isGK: teamBPlayers.find(p=>p.number===selectedPlayerB)?.isGoalkeeper }
     return null
   }
 
-  const isGoalkeeper = () => {
-    const activePlayer = getActiveTeamAndPlayer()
-    if (!activePlayer) return false
-    const players = activePlayer.team === "A" ? teamAPlayers : teamBPlayers
-    return players.find((p) => p.number === activePlayer.player)?.isGoalkeeper || false
-  }
-
-  const handleEditPlayer = (team: "A" | "B", index: number) => {
-    const player = team === "A" ? teamAPlayers[index] : teamBPlayers[index]
-    setEditingPlayer({ team, index })
-    setTempPlayerName(player.name)
-    setTempPlayerNumber(player.number.toString())
-    setTempPlayerPosition(player.isGoalkeeper ? "goalkeeper" : "field")
-  }
-
-  const handleSavePlayer = () => {
-    if (!editingPlayer) return
-    const { team, index } = editingPlayer
-    const updatedPlayer: Player = {
-      number: Number.parseInt(tempPlayerNumber) || index + 1,
-      name: tempPlayerName || `Jugador ${index + 1}`,
-      isGoalkeeper: tempPlayerPosition === "goalkeeper",
-    }
-    if (team === "A") {
-      const newPlayers = [...teamAPlayers]
-      newPlayers[index] = updatedPlayer
-      setTeamAPlayers(newPlayers)
-    } else {
-      const newPlayers = [...teamBPlayers]
-      newPlayers[index] = updatedPlayer
-      setTeamBPlayers(newPlayers)
-    }
-    setEditingPlayer(null)
-  }
-
-  const handlePlayerSelect = (team: "A" | "B", playerNumber: number) => {
-    // Si selecciono local, deselecciono visitante y viceversa
-    if (team === "A") {
-      setSelectedPlayerA(playerNumber)
-      setSelectedPlayerB(null)
-    } else {
-      setSelectedPlayerB(playerNumber)
-      setSelectedPlayerA(null)
-    }
+  const handlePlayerSelect = (team: "A" | "B", number: number) => {
+    if (team === "A") { setSelectedPlayerA(number); setSelectedPlayerB(null); }
+    else { setSelectedPlayerB(number); setSelectedPlayerA(null); }
     setWizardState("ACTION_SELECTION")
-    resetWizardData()
-    if (isMobile) setActiveTab("action")
-  }
-
-  const resetWizardData = () => {
-    setCurrentAction(null)
-    setSelectedCourtZone(null)
-    setSelectedGoalZone(null)
-    setSelectedContext([])
-    setSelectedLossType(null)
-    setSelectedDefenseType(null)
-  }
-
-  const handleBack = () => {
-    if (wizardState === "DETAILS") {
-      setWizardState("ACTION_SELECTION")
-      resetWizardData()
-    } else if (wizardState === "ACTION_SELECTION") {
-      setWizardState("IDLE")
-      setSelectedPlayerA(null)
-      setSelectedPlayerB(null)
-      resetWizardData()
-    }
+    resetWizard()
   }
 
   const handleActionSelect = (action: string) => {
     setCurrentAction(action)
-    const actionsWithDetails = [
-      "GOL",
-      "GOL CAMPO A CAMPO",
-      "PARADA",
-      "GOL ENCAJADO",
-      "FUERA",
-      "POSTE",
-      "BLOCADO",
-      "PÉRDIDA",
-    ]
-    if (actionsWithDetails.includes(action)) setWizardState("DETAILS")
-    else confirmEvent(action)
-  }
-
-  const confirmEvent = (actionOverride?: string) => {
-    const activePlayer = getActiveTeamAndPlayer()
-    if (!activePlayer) return
-    const finalAction = actionOverride || currentAction
-    if (!finalAction) return
-
-    const event: Event = {
-      id: Date.now().toString(),
-      timestamp: time,
-      player: activePlayer.player,
-      team: activePlayer.team,
-      action: finalAction,
-      courtZone: selectedCourtZone || undefined,
-      goalZone: selectedGoalZone || undefined,
-      specificAction: selectedLossType || undefined,
-      defenseType: selectedDefenseType || undefined,
-      context: selectedContext.length > 0 ? selectedContext : undefined,
+    // Acciones que requieren detalles extra
+    if (action.includes("GOL") || action.includes("PARADA") || action === "FUERA" || action === "PÉRDIDA") {
+      setWizardState("DETAILS")
+    } else {
+      confirmEvent(action)
     }
-
-    setEvents((prev) => [event, ...prev]) // Añadir al principio para feed
-    if (finalAction === "GOL" || finalAction === "GOL CAMPO A CAMPO") {
-      if (activePlayer.team === "A") setLocalScore((prev) => prev + 1)
-      else setVisitorScore((prev) => prev + 1)
-    }
-    setWizardState("IDLE")
-    setSelectedPlayerA(null)
-    setSelectedPlayerB(null)
-    resetWizardData()
   }
 
   const toggleContext = (ctx: string) => {
-    // Implementación simple
-    setSelectedContext((prev) => (prev.includes(ctx) ? prev.filter((c) => c !== ctx) : [...prev, ctx]))
+      setSelectedContext(prev => prev.includes(ctx) ? prev.filter(c => c !== ctx) : [...prev, ctx])
   }
 
-  const handleUndo = () => {
-    if (events.length === 0) return
-    const firstEvent = events[0] // Como añadimos al ppio, el último es el 0
-    if (firstEvent.action === "GOL") {
-      if (firstEvent.team === "A") setLocalScore((prev) => Math.max(0, prev - 1))
-      else setVisitorScore((prev) => Math.max(0, prev - 1))
+  const confirmEvent = (fastAction?: string) => {
+    const info = getActivePlayerInfo()
+    const action = fastAction || currentAction
+    if (!info || !action) return
+
+    const newEvent: Event = {
+      id: Date.now().toString(), timestamp: time, timeFormatted: formatTime(time),
+      player: info.player, team: info.team, action: action,
+      courtZone: selectedCourtZone || undefined, goalZone: selectedGoalZone || undefined,
+      context: selectedContext.length > 0 ? selectedContext : undefined,
+      defenseAtMoment: info.team === "A" ? defenseB : defenseA // Se guarda la defensa RIVAL en ese momento
     }
-    setEvents((prev) => prev.slice(1))
+
+    setEvents(prev => [newEvent, ...prev])
+    if (action.startsWith("GOL")) {
+      info.team === "A" ? setLocalScore(s => s + 1) : setVisitorScore(s => s + 1)
+    }
+
+    resetUI()
   }
 
-  const exportData = () => {
-    alert("Exportar CSV simulado")
+  const resetWizard = () => { setCurrentAction(null); setSelectedCourtZone(null); setSelectedGoalZone(null); setSelectedContext([]) }
+  const resetUI = () => { setWizardState("IDLE"); setSelectedPlayerA(null); setSelectedPlayerB(null); resetWizard() }
+  const handleBack = () => { wizardState === "DETAILS" ? setWizardState("ACTION_SELECTION") : resetUI() }
+  const handleUndo = () => {
+      if(events.length===0) return;
+      const last = events[0];
+      if(last.action.startsWith("GOL")) last.team==="A" ? setLocalScore(s=>s-1) : setVisitorScore(s=>s-1);
+      setEvents(prev=>prev.slice(1));
   }
 
-  // --- RENDERIZADO PRINCIPAL ---
-
+  // --- PANTALLA DE CONFIGURACIÓN (SETUP) ---
   if (appState === "SETUP") {
-    // (Código de setup igual que antes, resumido para brevedad en esta respuesta específica)
-    // Asumimos que el usuario lo tiene. Si lo necesitas completo dimelo.
-    return (
-        <div className="min-h-screen bg-slate-950 text-white p-4 flex items-center justify-center">
-             <div className="max-w-2xl w-full text-center space-y-6">
-                <h1 className="text-3xl font-bold">Configuración</h1>
-                <p>Configura los equipos (Simplificado para esta vista)</p>
-                <Button size="lg" onClick={() => setAppState("MATCH")} className="bg-green-600">INICIAR</Button>
-             </div>
+    const SetupTeamColumn = ({ team, name, setName, defense, setDefense, players, setPlayers, color }: any) => {
+      const [editingId, setEditingId] = useState<number | null>(null);
+      const [editData, setEditData] = useState<Player>({ number: 0, name: '', isGoalkeeper: false });
+
+      const startEdit = (player: Player) => { setEditingId(player.number); setEditData(player); };
+      const saveEdit = () => {
+          setPlayers(players.map((p:Player) => p.number === editingId ? editData : p));
+          setEditingId(null);
+      };
+
+      return (
+        <div className={`flex-1 bg-slate-900/50 p-4 rounded-xl border ${color === 'blue' ? 'border-blue-900/50' : 'border-amber-900/50'} flex flex-col gap-4`}>
+          <div>
+            <Label className="text-xs text-slate-400">Nombre Equipo</Label>
+            <Input value={name} onChange={e => setName(e.target.value)} className="bg-slate-950 border-slate-800 font-bold" />
+          </div>
+           <div>
+            <Label className="text-xs text-slate-400">Defensa Inicial</Label>
+            <Select value={defense} onValueChange={setDefense}>
+                <SelectTrigger className="bg-slate-950 border-slate-800"><SelectValue /></SelectTrigger>
+                <SelectContent className="bg-slate-900 border-slate-800">
+                    {DEFENSE_TYPES.map(dt => <SelectItem key={dt} value={dt} className="text-slate-200 focus:bg-slate-800">{dt}</SelectItem>)}
+                </SelectContent>
+            </Select>
+          </div>
+
+          <div className="flex-1 overflow-y-auto custom-scrollbar border-t border-slate-800 pt-2">
+            <Label className="text-xs text-slate-400 mb-2 block">Jugadores</Label>
+            <div className="space-y-1">
+                {players.map((p: Player) => (
+                    <Dialog key={p.number} open={editingId === p.number} onOpenChange={(open) => !open && setEditingId(null)}>
+                        <DialogTrigger asChild>
+                             <div onClick={() => startEdit(p)} className={`flex items-center justify-between p-2 rounded bg-slate-800/50 hover:bg-slate-800 cursor-pointer border ${color === 'blue' ? 'hover:border-blue-500/50' : 'hover:border-amber-500/50'} border-transparent transition-all group`}>
+                                <div className="flex items-center gap-2">
+                                    <span className={`font-bold w-6 text-center ${color === 'blue' ? 'text-blue-400' : 'text-amber-400'}`}>{p.number}</span>
+                                    <span className="text-sm">{p.name}</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    {p.isGoalkeeper && <Shield className="w-3 h-3 text-slate-500" />}
+                                    <Edit3 className="w-3 h-3 text-slate-600 group-hover:text-slate-300" />
+                                </div>
+                            </div>
+                        </DialogTrigger>
+                        <DialogContent className="bg-slate-950 border-slate-800 text-slate-100">
+                            <DialogHeader><DialogTitle>Editar Jugador {p.number}</DialogTitle></DialogHeader>
+                            <div className="grid gap-4 py-4">
+                                <div className="grid grid-cols-4 items-center gap-4">
+                                    <Label className="text-right">Número</Label>
+                                    <Input type="number" value={editData.number} onChange={e => setEditData({...editData, number: parseInt(e.target.value) || 0})} className="col-span-3 bg-slate-900 border-slate-800"/>
+                                </div>
+                                <div className="grid grid-cols-4 items-center gap-4">
+                                    <Label className="text-right">Nombre</Label>
+                                    <Input value={editData.name} onChange={e => setEditData({...editData, name: e.target.value})} className="col-span-3 bg-slate-900 border-slate-800"/>
+                                </div>
+                                 <div className="grid grid-cols-4 items-center gap-4">
+                                    <Label className="text-right">Es Portero</Label>
+                                    <div className="col-span-3 flex items-center space-x-2">
+                                        <Switch id="gk-mode" checked={editData.isGoalkeeper} onCheckedChange={c => setEditData({...editData, isGoalkeeper: c})} />
+                                        <Label htmlFor="gk-mode">{editData.isGoalkeeper ? "Sí" : "No"}</Label>
+                                    </div>
+                                </div>
+                            </div>
+                            <DialogFooter><Button onClick={saveEdit} className="bg-green-600 hover:bg-green-500">Guardar</Button></DialogFooter>
+                        </DialogContent>
+                    </Dialog>
+                ))}
+            </div>
+          </div>
         </div>
+      );
+    }
+
+    return (
+      <div className="min-h-screen bg-slate-950 text-white p-6 flex flex-col">
+        <h1 className="text-2xl font-bold mb-6 text-center uppercase tracking-widest flex items-center justify-center gap-2"><Settings className="w-6 h-6"/> Configuración de Partido</h1>
+        <div className="flex-1 flex gap-6 min-h-0">
+            <SetupTeamColumn team="A" name={teamAName} setName={setTeamAName} defense={defenseA} setDefense={setDefenseA} players={teamAPlayers} setPlayers={setTeamAPlayers} color="blue" />
+            <SetupTeamColumn team="B" name={teamBName} setName={setTeamBName} defense={defenseB} setDefense={setDefenseB} players={teamBPlayers} setPlayers={setTeamBPlayers} color="amber" />
+        </div>
+        <Button size="lg" onClick={() => setAppState("MATCH")} className="mt-6 w-full bg-green-600 hover:bg-green-500 font-black tracking-widest text-xl py-6 shadow-[0_0_20px_rgba(34,197,94,0.3)]">
+            COMENZAR PARTIDO
+        </Button>
+      </div>
     )
   }
 
-  // LAYOUT DEL PARTIDO (MATCH)
+  // --- PANTALLA DE PARTIDO (MATCH) ---
+  const activeInfo = getActivePlayerInfo()
   return (
-    <div className="flex flex-col h-screen bg-slate-950 text-slate-100 overflow-hidden box-border font-sans">
-      
-      {/* HEADER */}
-      <HeaderScoreboard
-        localScore={localScore}
-        visitorScore={visitorScore}
-        teamAName={teamAName}
-        teamBName={teamBName}
-        time={time}
-        isRunning={isRunning}
-        setIsRunning={setIsRunning}
-        formatTime={formatTime}
-      />
+    <div className="flex flex-col h-screen bg-slate-950 text-slate-100 overflow-hidden font-sans">
+      <HeaderScoreboard localScore={localScore} visitorScore={visitorScore} teamAName={teamAName} teamBName={teamBName} time={time} isRunning={isRunning} setIsRunning={setIsRunning} formatTime={formatTime} defenseA={defenseA} defenseB={defenseB}/>
 
-      <div className="flex-1 overflow-hidden p-2 sm:p-4 w-full h-full min-h-0">
-        <div className="grid grid-cols-[30%_1fr_30%] gap-4 h-full w-full max-w-[1920px] mx-auto min-h-0">
-          
-          {/* === COLUMNA 1: IZQUIERDA (VISITANTE + LIVE FEED) === */}
-          <div className="flex flex-col gap-4 h-full overflow-hidden min-h-0 relative">
-            
-            {/* MITAD SUPERIOR: Grid Visitante (O Wizard si Visitante seleccionado) */}
-            <div className="h-1/2 min-h-0 flex flex-col relative">
-                {selectedPlayerB ? (
-                     <div className="h-full animate-in slide-in-from-left-4 duration-300">
-                        <ActionWizard
-                            wizardState={wizardState}
-                            activePlayer={getActiveTeamAndPlayer()}
-                            isGoalkeeper={isGoalkeeper()}
-                            handleBack={handleBack}
-                            currentAction={currentAction}
-                            handleActionSelect={handleActionSelect}
-                            selectedDefenseType={selectedDefenseType}
-                            setSelectedDefenseType={setSelectedDefenseType}
-                            selectedLossType={selectedLossType}
-                            setSelectedLossType={setSelectedLossType}
-                            selectedCourtZone={selectedCourtZone}
-                            setSelectedCourtZone={setSelectedCourtZone}
-                            selectedGoalZone={selectedGoalZone}
-                            setSelectedGoalZone={setSelectedGoalZone}
-                            selectedContext={selectedContext}
-                            toggleContext={toggleContext}
-                            confirmEvent={confirmEvent}
-                        />
-                     </div>
-                ) : (
-                    <PlayerGrid
-                        team="B" // Equipo B (Visitante)
-                        players={teamBPlayers}
-                        selectedPlayerA={selectedPlayerA}
-                        selectedPlayerB={selectedPlayerB}
-                        handlePlayerSelect={handlePlayerSelect}
-                        teamName={teamBName}
-                    />
-                )}
-            </div>
+      <div className="flex-1 p-3 w-full h-full min-h-0 overflow-hidden relative">
+        {/* Layout Principal: 3 Columnas */}
+        <div className="grid grid-cols-[28%_1fr_28%] gap-3 h-full w-full max-w-[1920px] mx-auto min-h-0 relative z-10">
 
-            {/* MITAD INFERIOR: Live Feed (Historial) */}
-            <div className="h-1/2 min-h-0 bg-slate-900 border border-slate-800 rounded-lg overflow-hidden flex flex-col">
-                <div className="bg-slate-950 px-3 py-2 border-b border-slate-800 flex justify-between items-center">
-                    <span className="text-xs font-bold uppercase text-slate-400">Live Feed</span>
-                    <History className="w-4 h-4 text-slate-500" />
+          {/* COLUMNA IZQUIERDA: LOCAL (A) */}
+          <div className="flex flex-col gap-3 h-full min-h-0 relative">
+            {selectedPlayerA ? (
+                <div className="h-full animate-in slide-in-from-right-4 duration-200">
+                <ActionWizard wizardState={wizardState} activePlayer={activeInfo} isGoalkeeper={activeInfo?.isGK} handleBack={handleBack} currentAction={currentAction} handleActionSelect={handleActionSelect} selectedContext={selectedContext} toggleContext={toggleContext} confirmEvent={() => confirmEvent()} selectedCourtZone={selectedCourtZone} setSelectedCourtZone={setSelectedCourtZone} selectedGoalZone={selectedGoalZone} setSelectedGoalZone={setSelectedGoalZone} />
                 </div>
-                <div className="flex-1 overflow-hidden">
-                    <HistoryPanel
-                        events={events}
-                        teamAName={teamAName}
-                        teamBName={teamBName}
-                        onUndo={handleUndo}
-                        onExport={exportData}
-                        formatTime={formatTime}
-                    />
-                </div>
-            </div>
-
+            ) : (
+                <PlayerGrid team="A" players={teamAPlayers} selectedPlayerA={selectedPlayerA} selectedPlayerB={selectedPlayerB} handlePlayerSelect={handlePlayerSelect} teamName={teamAName} />
+            )}
           </div>
 
-          {/* === COLUMNA 2: CENTRO (STATS TABLE + PORTERÍA) === */}
-          <div className="flex flex-col gap-4 h-full overflow-hidden min-h-0">
-            
-            {/* PARTE SUPERIOR: Tabla de Estadísticas (Foto) */}
-            <div className="h-1/2 min-h-0">
+          {/* COLUMNA CENTRAL: ESTADÍSTICAS + PORTERÍA */}
+          <div className="flex flex-col gap-3 h-full min-h-0">
+            <div className="h-[45%] min-h-0 shrink-0">
                 <StatsTable events={events} teamAName={teamAName} teamBName={teamBName} />
             </div>
-
-            {/* PARTE INFERIOR: Portería */}
-            <div className="h-1/2 min-h-0 relative">
-                 <PorteriaResponsive events={events} />
-                 
-                 {/* Botón flotante para expandir portería si se quiere ver grande */}
-                 <div className="absolute top-2 right-2">
+            <div className="h-[55%] min-h-0 relative shrink-0">
+                 <PorteriaAdvanced events={events} />
+                 <div className="absolute bottom-2 right-2 opacity-50 hover:opacity-100 transition-opacity">
                     <Dialog>
-                      <DialogTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-6 w-6 text-slate-500 hover:text-white bg-black/20 rounded-full">
-                          <Maximize2 className="w-3 h-3" />
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent className="max-w-4xl bg-slate-950 border-slate-800 p-6 h-[80vh]">
-                          <PorteriaResponsive events={events} />
-                      </DialogContent>
+                      <DialogTrigger asChild><Button variant="ghost" size="icon" className="h-6 w-6 bg-black/40 hover:bg-black/60 rounded"><Maximize2 className="w-3 h-3" /></Button></DialogTrigger>
+                      <DialogContent className="max-w-3xl bg-slate-900 border-slate-800 p-4 aspect-video"><PorteriaAdvanced events={events} /></DialogContent>
                     </Dialog>
                  </div>
             </div>
-
           </div>
 
-          {/* === COLUMNA 3: DERECHA (LOCAL) === */}
-          <div className="flex flex-col gap-4 h-full overflow-hidden min-h-0 relative">
-             {selectedPlayerA ? (
-                     <div className="h-full animate-in slide-in-from-right-4 duration-300">
-                        <ActionWizard
-                            wizardState={wizardState}
-                            activePlayer={getActiveTeamAndPlayer()}
-                            isGoalkeeper={isGoalkeeper()}
-                            handleBack={handleBack}
-                            currentAction={currentAction}
-                            handleActionSelect={handleActionSelect}
-                            selectedDefenseType={selectedDefenseType}
-                            setSelectedDefenseType={setSelectedDefenseType}
-                            selectedLossType={selectedLossType}
-                            setSelectedLossType={setSelectedLossType}
-                            selectedCourtZone={selectedCourtZone}
-                            setSelectedCourtZone={setSelectedCourtZone}
-                            selectedGoalZone={selectedGoalZone}
-                            setSelectedGoalZone={setSelectedGoalZone}
-                            selectedContext={selectedContext}
-                            toggleContext={toggleContext}
-                            confirmEvent={confirmEvent}
-                        />
-                     </div>
+          {/* COLUMNA DERECHA: VISITANTE (B) + LIVE FEED */}
+          <div className="flex flex-col gap-3 h-full min-h-0 relative">
+            <div className="h-1/2 min-h-0 relative">
+                {selectedPlayerB ? (
+                    <div className="h-full animate-in slide-in-from-left-4 duration-200">
+                    <ActionWizard wizardState={wizardState} activePlayer={activeInfo} isGoalkeeper={activeInfo?.isGK} handleBack={handleBack} currentAction={currentAction} handleActionSelect={handleActionSelect} selectedContext={selectedContext} toggleContext={toggleContext} confirmEvent={() => confirmEvent()} selectedCourtZone={selectedCourtZone} setSelectedCourtZone={setSelectedCourtZone} selectedGoalZone={selectedGoalZone} setSelectedGoalZone={setSelectedGoalZone} />
+                    </div>
                 ) : (
-                    <PlayerGrid
-                        team="A" // Equipo A (Local)
-                        players={teamAPlayers}
-                        selectedPlayerA={selectedPlayerA}
-                        selectedPlayerB={selectedPlayerB}
-                        handlePlayerSelect={handlePlayerSelect}
-                        teamName={teamAName}
-                    />
+                    <PlayerGrid team="B" players={teamBPlayers} selectedPlayerA={selectedPlayerA} selectedPlayerB={selectedPlayerB} handlePlayerSelect={handlePlayerSelect} teamName={teamBName} />
                 )}
+            </div>
+            <div className="h-1/2 min-h-0 bg-slate-900 border border-slate-800 rounded-lg overflow-hidden flex flex-col shadow-sm">
+                <div className="bg-slate-950/80 px-3 py-1.5 border-b border-slate-800 flex justify-between items-center shrink-0">
+                    <span className="text-[10px] font-bold uppercase text-slate-400 flex items-center gap-1"><History className="w-3 h-3"/> Live Feed</span>
+                </div>
+                <div className="flex-1 overflow-hidden relative">
+                    <HistoryPanel events={events} teamAName={teamAName} teamBName={teamBName} onUndo={handleUndo} onExport={() => alert("Exportar CSV")} formatTime={formatTime} />
+                </div>
+            </div>
           </div>
 
         </div>
