@@ -1107,7 +1107,7 @@ export default function MatchView() {
       />
 
       <div className="flex-1 p-3 w-full h-full min-h-0 overflow-hidden relative">
-        <div className="grid grid-cols-1 sm:grid-cols-[35%_1fr] lg:grid-cols-[28%_1fr_28%] gap-3 h-full w-full max-w-[1920px] mx-auto min-h-0 relative z-10">
+        <div className="grid grid-cols-1 sm:grid-cols-[45%_1fr] lg:grid-cols-[28%_1fr_28%] gap-3 h-full w-full max-w-[1920px] mx-auto min-h-0 relative z-10">
           <div className="flex flex-col gap-3 h-full min-h-0 relative">
             {selectedPlayerA ? (
               <div className="h-full animate-in slide-in-from-right-4 duration-200">
