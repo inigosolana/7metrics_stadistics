@@ -1231,8 +1231,10 @@ export default function MatchView() {
                     <Maximize2 className="w-5 h-5" />
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="max-w-[95vw] h-[85vh] w-full p-6 bg-slate-950 border-slate-800 border rounded-lg flex items-center justify-center">
-                  <PorteriaAdvanced events={events} />
+                <DialogContent className="w-[95vw] max-w-none h-[85vh] lg:max-w-[1600px] max-h-screen overflow-y-auto bg-slate-950 border-slate-800 border rounded-lg p-4 flex flex-col items-center justify-center">
+                  <div className="w-full h-full flex-1">
+                    <PorteriaAdvanced events={events} />
+                  </div>
                 </DialogContent>
               </Dialog>
 
