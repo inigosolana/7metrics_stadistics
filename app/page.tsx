@@ -459,6 +459,12 @@ const ActionWizard = ({
               GOL 7m
             </Button>
             <Button
+              className="h-12 text-sm font-bold bg-green-700 hover:bg-green-600 border-b-4 border-green-900 active:border-0 active:translate-y-1 transition-all"
+              onClick={() => handleActionSelect("GOL CAMPO A CAMPO")}
+            >
+              GOL C2C
+            </Button>
+            <Button
               className="h-12 text-sm font-bold bg-red-700 hover:bg-red-600 border-b-4 border-red-900 active:border-0 active:translate-y-1 transition-all"
               onClick={() => handleActionSelect("FALLO 7M")}
             >
@@ -504,99 +510,154 @@ const ActionWizard = ({
     {wizardState === "DETAILS" && (
       <div className="flex-1 flex flex-col h-full animate-in slide-in-from-right-10 overflow-hidden pb-14">
         <div className="flex-1 overflow-y-auto space-y-3 p-1 custom-scrollbar">
-          <div className="bg-slate-950/80 p-2 rounded-lg border border-slate-800/50">
-            <div className="text-[9px] font-bold text-slate-500 mb-1.5 uppercase tracking-widest flex items-center gap-1">
-              <Shield className="w-3 h-3" /> Defensa Rival (Momento)
-            </div>
-            <div className="flex flex-wrap gap-1.5">
-              {DEFENSE_TYPES.map((dt) => (
-                <Button
-                  key={dt}
-                  size="sm"
-                  variant="outline"
-                  className={`h-7 text-[9px] uppercase font-bold px-2 transition-all ${selectedDefense === dt ? "bg-indigo-600 border-indigo-500 text-white" : "bg-slate-900 border-slate-700 text-slate-400 hover:bg-slate-800"}`}
-                  onClick={() => setSelectedDefense(dt)}
-                >
-                  {dt}
-                </Button>
-              ))}
-            </div>
-          </div>
-
-          {currentAction.startsWith("GOL") && (
-            <div className="bg-slate-950/80 p-2 rounded-lg border border-slate-800/50">
-              <div className="text-[9px] font-bold text-slate-500 mb-1.5 uppercase tracking-widest flex items-center gap-1">
-                <Filter className="w-3 h-3" /> Contexto Táctico
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                {["Igualdad", "Superioridad"].map((ctx) => {
-                  const isActive = selectedContext.includes(ctx)
-                  return (
+          {currentAction === "GOL CAMPO A CAMPO" ? (
+            <>
+              {/* Defensa Rival */}
+              <div className="bg-slate-950/80 p-2 rounded-lg border border-slate-800/50">
+                <div className="text-[9px] font-bold text-slate-500 mb-1.5 uppercase tracking-widest flex items-center gap-1">
+                  <Shield className="w-3 h-3" /> Defensa Rival (Momento)
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {DEFENSE_TYPES.map((dt) => (
                     <Button
-                      key={ctx}
+                      key={dt}
                       size="sm"
                       variant="outline"
-                      className={`h-8 text-[10px] uppercase font-bold px-2 transition-all ${isActive ? "bg-slate-100 text-slate-900 border-white" : "bg-slate-900 border-slate-700 text-slate-400 hover:bg-slate-800"}`}
-                      onClick={() => toggleContext(ctx)}
+                      className={`h-7 text-[9px] uppercase font-bold px-2 transition-all ${selectedDefense === dt ? "bg-indigo-600 border-indigo-500 text-white" : "bg-slate-900 border-slate-700 text-slate-400 hover:bg-slate-800"}`}
+                      onClick={() => setSelectedDefense(dt)}
                     >
-                      {ctx}
+                      {dt}
                     </Button>
-                  )
-                })}
-                {["Inferioridad", "Contraataque"].map((ctx) => {
-                  const isActive = selectedContext.includes(ctx)
-                  return (
+                  ))}
+                </div>
+              </div>
+
+              {/* Contexto Táctico (solo Igualdad, Superioridad, Inferioridad) */}
+              <div className="bg-slate-950/80 p-2 rounded-lg border border-slate-800/50">
+                <div className="text-[9px] font-bold text-slate-500 mb-1.5 uppercase tracking-widest flex items-center gap-1">
+                  <Filter className="w-3 h-3" /> Contexto Táctico
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  {["Igualdad", "Superioridad", "Inferioridad"].map((ctx) => {
+                    const isActive = selectedContext.includes(ctx)
+                    return (
+                      <Button
+                        key={ctx}
+                        size="sm"
+                        variant="outline"
+                        className={`h-8 text-[10px] uppercase font-bold px-2 transition-all ${isActive ? "bg-slate-100 text-slate-900 border-white" : "bg-slate-900 border-slate-700 text-slate-400 hover:bg-slate-800"}`}
+                        onClick={() => toggleContext(ctx)}
+                      >
+                        {ctx}
+                      </Button>
+                    )
+                  })}
+                </div>
+              </div>
+            </>
+          ) : (
+            <>
+              {/* Defensa Rival (para otras acciones) */}
+              <div className="bg-slate-950/80 p-2 rounded-lg border border-slate-800/50">
+                <div className="text-[9px] font-bold text-slate-500 mb-1.5 uppercase tracking-widest flex items-center gap-1">
+                  <Shield className="w-3 h-3" /> Defensa Rival (Momento)
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {DEFENSE_TYPES.map((dt) => (
                     <Button
-                      key={ctx}
+                      key={dt}
                       size="sm"
                       variant="outline"
-                      className={`h-8 text-[10px] uppercase font-bold px-2 transition-all ${isActive ? "bg-slate-100 text-slate-900 border-white" : "bg-slate-900 border-slate-700 text-slate-400 hover:bg-slate-800"}`}
-                      onClick={() => toggleContext(ctx)}
+                      className={`h-7 text-[9px] uppercase font-bold px-2 transition-all ${selectedDefense === dt ? "bg-indigo-600 border-indigo-500 text-white" : "bg-slate-900 border-slate-700 text-slate-400 hover:bg-slate-800"}`}
+                      onClick={() => setSelectedDefense(dt)}
                     >
-                      {ctx}
+                      {dt}
                     </Button>
-                  )
-                })}
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
 
-          {!currentAction.includes("7M") && ["GOL", "PARADA", "FUERA", "PÉRDIDA"].includes(currentAction) && (
-            <div className="bg-slate-950/80 p-2 rounded-lg border border-slate-800/50">
-              <div className="text-[9px] font-bold text-slate-500 mb-1.5 uppercase tracking-widest">Zona Origen</div>
-              <div className="grid grid-cols-3 gap-1">
-                {COURT_ZONES.map((z) => (
-                  <Button
-                    key={z}
-                    size="sm"
-                    className={`h-7 text-[8px] font-bold leading-tight border transition-all ${selectedCourtZone === z ? "bg-blue-600 text-white border-blue-400 shadow-sm" : "bg-slate-800/50 text-slate-300 border-slate-700 hover:bg-slate-700"}`}
-                    onClick={() => setSelectedCourtZone(z)}
-                  >
-                    {z}
-                  </Button>
-                ))}
-              </div>
-            </div>
-          )}
+              {/* Contexto Táctico (para GOL) */}
+              {currentAction.startsWith("GOL") && (
+                <div className="bg-slate-950/80 p-2 rounded-lg border border-slate-800/50">
+                  <div className="text-[9px] font-bold text-slate-500 mb-1.5 uppercase tracking-widest flex items-center gap-1">
+                    <Filter className="w-3 h-3" /> Contexto Táctico
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    {["Igualdad", "Superioridad"].map((ctx) => {
+                      const isActive = selectedContext.includes(ctx)
+                      return (
+                        <Button
+                          key={ctx}
+                          size="sm"
+                          variant="outline"
+                          className={`h-8 text-[10px] uppercase font-bold px-2 transition-all ${isActive ? "bg-slate-100 text-slate-900 border-white" : "bg-slate-900 border-slate-700 text-slate-400 hover:bg-slate-800"}`}
+                          onClick={() => toggleContext(ctx)}
+                        >
+                          {ctx}
+                        </Button>
+                      )
+                    })}
+                    {["Inferioridad", "Contraataque"].map((ctx) => {
+                      const isActive = selectedContext.includes(ctx)
+                      return (
+                        <Button
+                          key={ctx}
+                          size="sm"
+                          variant="outline"
+                          className={`h-8 text-[10px] uppercase font-bold px-2 transition-all ${isActive ? "bg-slate-100 text-slate-900 border-white" : "bg-slate-900 border-slate-700 text-slate-400 hover:bg-slate-800"}`}
+                          onClick={() => toggleContext(ctx)}
+                        >
+                          {ctx}
+                        </Button>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
 
-          {(currentAction.startsWith("GOL") || ["PARADA", "FUERA", "FALLO 7M"].includes(currentAction)) && (
-            <div className="bg-slate-950/80 p-2 rounded-lg border border-slate-800/50 flex flex-col items-center">
-              <div className="text-[9px] font-bold text-slate-500 mb-1.5 uppercase tracking-widest">
-                Zona Definición
-              </div>
-              <div className="aspect-square w-full max-w-[120px] grid grid-cols-3 gap-0.5 bg-slate-800 p-0.5 rounded border border-slate-700 shadow-inner">
-                {GOAL_ZONES.map((z) => (
-                  <Button
-                    key={z}
-                    variant="ghost"
-                    className={`h-full w-full text-base font-black rounded-sm transition-all p-0 ${selectedGoalZone === z ? (currentAction.startsWith("GOL") ? "bg-green-500 text-black shadow-[inset_0_0_10px_rgba(0,0,0,0.2)]" : "bg-red-500 text-white") : "bg-slate-700/50 text-slate-500 hover:bg-slate-600 hover:text-slate-200"}`}
-                    onClick={() => setSelectedGoalZone(z)}
-                  >
-                    {z}
-                  </Button>
-                ))}
-              </div>
-            </div>
+              {/* Zona Origen */}
+              {!currentAction.includes("7M") && ["GOL", "PARADA", "FUERA", "PÉRDIDA"].includes(currentAction) && (
+                <div className="bg-slate-950/80 p-2 rounded-lg border border-slate-800/50">
+                  <div className="text-[9px] font-bold text-slate-500 mb-1.5 uppercase tracking-widest">
+                    Zona Origen
+                  </div>
+                  <div className="grid grid-cols-3 gap-1">
+                    {COURT_ZONES.map((z) => (
+                      <Button
+                        key={z}
+                        size="sm"
+                        className={`h-7 text-[8px] font-bold leading-tight border transition-all ${selectedCourtZone === z ? "bg-blue-600 text-white border-blue-400 shadow-sm" : "bg-slate-800/50 text-slate-300 border-slate-700 hover:bg-slate-700"}`}
+                        onClick={() => setSelectedCourtZone(z)}
+                      >
+                        {z}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Zona Definición */}
+              {(currentAction.startsWith("GOL") || ["PARADA", "FUERA", "FALLO 7M"].includes(currentAction)) && (
+                <div className="bg-slate-950/80 p-2 rounded-lg border border-slate-800/50 flex flex-col items-center">
+                  <div className="text-[9px] font-bold text-slate-500 mb-1.5 uppercase tracking-widest">
+                    Zona Definición
+                  </div>
+                  <div className="aspect-square w-full max-w-[120px] grid grid-cols-3 gap-0.5 bg-slate-800 p-0.5 rounded border border-slate-700 shadow-inner">
+                    {GOAL_ZONES.map((z) => (
+                      <Button
+                        key={z}
+                        variant="ghost"
+                        className={`h-full w-full text-base font-black rounded-sm transition-all p-0 ${selectedGoalZone === z ? (currentAction.startsWith("GOL") ? "bg-green-500 text-black shadow-[inset_0_0_10px_rgba(0,0,0,0.2)]" : "bg-red-500 text-white") : "bg-slate-700/50 text-slate-500 hover:bg-slate-600 hover:text-slate-200"}`}
+                        onClick={() => setSelectedGoalZone(z)}
+                      >
+                        {z}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </div>
 
@@ -708,7 +769,13 @@ export default function MatchView() {
 
   const handleActionSelect = (action: string) => {
     setCurrentAction(action)
-    if (action.includes("GOL") || action.includes("PARADA") || action === "FUERA" || action === "PÉRDIDA") {
+    if (
+      action.includes("GOL") ||
+      action.includes("PARADA") ||
+      action === "FUERA" ||
+      action === "PÉRDIDA" ||
+      action === "GOL CAMPO A CAMPO"
+    ) {
       setWizardState("DETAILS")
     } else {
       confirmEvent(action)
@@ -738,6 +805,8 @@ export default function MatchView() {
     } else if (action === "POSSESSION") {
       // Explicit possession change event - can be used for kick-offs etc.
       nextPossessionTeam = team // The team indicated in the event gets possession
+    } else if (action === "GOL CAMPO A CAMPO") {
+      nextPossessionTeam = team // Goal from own half means possession stays
     }
 
     if (nextPossessionTeam && nextPossessionTeam !== currentPossession) {
@@ -768,7 +837,7 @@ export default function MatchView() {
     }
 
     setEvents((prev) => [newEvent, ...prev])
-    if (action.startsWith("GOL")) {
+    if (action.startsWith("GOL") || action === "GOL CAMPO A CAMPO") {
       info.team === "A" ? setLocalScore((s) => s + 1) : setVisitorScore((s) => s + 1)
     }
 
@@ -800,7 +869,8 @@ export default function MatchView() {
       // For now, we'll just remove the event and not try to precisely revert possession.
       // A full implementation would require storing past possession states.
     }
-    if (last.action.startsWith("GOL")) last.team === "A" ? setLocalScore((s) => s - 1) : setVisitorScore((s) => s - 1)
+    if (last.action.startsWith("GOL") || last.action === "GOL CAMPO A CAMPO")
+      last.team === "A" ? setLocalScore((s) => s - 1) : setVisitorScore((s) => s - 1)
     setEvents((prev) => prev.slice(1))
   }
 
@@ -1091,6 +1161,7 @@ export default function MatchView() {
     )
   }
 
+  // --- MATCH VIEW ---
   return (
     <div className="flex flex-col h-screen bg-slate-950 text-slate-100 overflow-hidden font-sans">
       <HeaderScoreboard
@@ -1108,6 +1179,7 @@ export default function MatchView() {
 
       <div className="flex-1 p-3 w-full h-full min-h-0 overflow-hidden relative">
         <div className="grid grid-cols-1 sm:grid-cols-[45%_1fr] lg:grid-cols-[28%_1fr_28%] gap-3 h-full w-full max-w-[1920px] mx-auto min-h-0 relative z-10">
+          {/* TEAM A / LEFT PANEL */}
           <div className="flex flex-col gap-3 h-full min-h-0 relative">
             {selectedPlayerA ? (
               <div className="h-full animate-in slide-in-from-right-4 duration-200">
@@ -1141,18 +1213,36 @@ export default function MatchView() {
             )}
           </div>
 
+          {/* CENTER PANEL - STATS & PORTERIA */}
           <div className="flex flex-col gap-3 h-full min-h-0">
-            <div className="h-[65%] min-h-0 shrink-0">
+            <div className="h-auto shrink-0">
               <StatsTable events={events} teamAName={teamAName} teamBName={teamBName} />
             </div>
-            <div className="h-[35%] min-h-0 relative shrink-0">
+
+            <div className="flex-1 min-h-0 relative">
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="absolute top-2 right-2 z-50 text-slate-400 hover:text-white hover:bg-slate-800/50"
+                    title="Ampliar portería"
+                  >
+                    <Maximize2 className="w-5 h-5" />
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-[95vw] max-h-[95vh] w-full h-full p-0 bg-slate-950 border-0">
+                  <div className="w-full h-full">
+                    <PorteriaAdvanced events={events} />
+                  </div>
+                </DialogContent>
+              </Dialog>
+
               <PorteriaAdvanced events={events} />
-              <div className="absolute bottom-2 right-2 opacity-60 hover:opacity-100 transition-opacity">
-                <Maximize2 className="w-4 h-4 text-slate-500" />
-              </div>
             </div>
           </div>
 
+          {/* TEAM B / RIGHT PANEL */}
           <div className="flex flex-col gap-3 h-full min-h-0 relative">
             {selectedPlayerB ? (
               <div className="h-full animate-in slide-in-from-left-4 duration-200">
@@ -1184,13 +1274,13 @@ export default function MatchView() {
                 teamName={teamBName}
               />
             )}
-            <div className="hidden lg:block">
+            <div className="hidden lg:flex flex-1 min-h-0">
               <LiveFeedPanel events={events} onUndo={handleUndo} onExport={exportData} />
             </div>
           </div>
         </div>
 
-        {/* Mobile Live Feed */}
+        {/* Mobile Live Feed - Bottom slide (hidden on desktop) */}
         <div className="lg:hidden absolute bottom-0 left-0 right-0 bg-slate-950 border-t border-slate-800 p-2 h-[30%] z-20">
           <LiveFeedPanel events={events} onUndo={handleUndo} onExport={exportData} />
         </div>
