@@ -462,7 +462,7 @@ const ActionWizard = ({
               className="h-12 text-sm font-bold bg-green-700 hover:bg-green-600 border-b-4 border-green-900 active:border-0 active:translate-y-1 transition-all"
               onClick={() => handleActionSelect("GOL CAMPO A CAMPO")}
             >
-              GOL C2C
+              GOL CAMPO A CAMPO
             </Button>
             <Button
               className="h-12 text-sm font-bold bg-red-700 hover:bg-red-600 border-b-4 border-red-900 active:border-0 active:translate-y-1 transition-all"
@@ -1231,8 +1231,8 @@ export default function MatchView() {
                     <Maximize2 className="w-5 h-5" />
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="max-w-[95vw] max-h-[95vh] w-full h-full p-0 bg-slate-950 border-0">
-                  <div className="w-full h-full">
+                <DialogContent className="max-w-6xl h-[70vh] w-full p-0 bg-slate-950 border-slate-800 border rounded-lg">
+                  <div className="w-full h-full flex items-center justify-center">
                     <PorteriaAdvanced events={events} />
                   </div>
                 </DialogContent>
