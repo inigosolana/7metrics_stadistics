@@ -53,6 +53,8 @@ type Event = {
   context?: string[]
   turnoverType?: TurnoverType
   recoveryType?: "Robo" | "Interceptación" | "Falta en Ataque"
+  is_7m?: boolean // Flag para identificar lanzamientos de 7 metros
+  displayColor?: "BLUE" | "ORANGE" // Color visual para portería
 }
 
 type Player = {
@@ -252,7 +254,8 @@ const StatsTable = ({ events, teamAName, teamBName }: { events: Event[]; teamANa
       ).length,
       saves: events.filter((e) => e.team === team && e.action === "PARADA").length,
       turnovers: events.filter((e) => e.team === team && e.action === "PÉRDIDA").length,
-      possessions: events.filter((e) => e.team === team && e.action === "POSSESSION").length, // Añadido contador de posesiones
+      possessions: events.filter((e) => e.team === team && e.action === "POSSESSION").length,
+      recoveries: events.filter((e) => e.team === team && e.action === "RECUPERACIÓN").length,
       goals7m: events.filter((e) => e.team === team && e.action === "GOL 7M").length,
       goalsSup: events.filter(
         (e) => e.team === team && e.action.startsWith("GOL") && e.context?.includes("Superioridad"),
@@ -298,6 +301,7 @@ const StatsTable = ({ events, teamAName, teamBName }: { events: Event[]; teamANa
         <StatRow label="Efectividad Tiro" valA={`${effA}%`} valB={`${effB}%`} highlight />
         <StatRow label="Paradas" valA={stats.A.saves} valB={stats.B.saves} />
         <StatRow label="Pérdidas" valA={stats.A.turnovers} valB={stats.B.turnovers} />
+        <StatRow label="Recuperaciones" valA={stats.A.recoveries} valB={stats.B.recoveries} />
         <StatRow label="Posesiones" valA={stats.A.possessions} valB={stats.B.possessions} />
         <StatRow label="Goles 7m" valA={`${stats.A.goals7m}`} valB={`${stats.B.goals7m}`} />
         <div className="my-1 border-t border-slate-200"></div>
@@ -319,17 +323,21 @@ const PorteriaAdvanced = ({ events }: { events: Event[] }) => {
     return events.filter((e) => {
       if (e.team !== "B") return false // Solo Visitante
       if (!e.goalZone) return false
-      const isShot = ["GOL", "GOL 7M", "PARADA", "BLOCADO"].some((act) => e.action.startsWith(act))
+      const isShot = ["GOL", "GOL 7M", "PARADA", "BLOCADO", "FUERA"].some(
+        (act) => e.action.startsWith(act) || e.action === act,
+      )
       if (!isShot) return false
       if (filter === "WING" && !e.courtZone?.includes("Extremo")) return false
-      if (filter === "7M" && !e.action.includes("7M")) return false
+      if (filter === "7M" && !e.is_7m) return false
       return true
     })
   }, [events, filter])
 
   const heatmapScale = useMemo(() => {
     const goalsPerZone = GOAL_ZONES.map(
-      (z) => relevantShots.filter((s) => s.goalZone === z && s.action.startsWith("GOL")).length,
+      (z) =>
+        relevantShots.filter((s) => s.goalZone === z && (s.action.startsWith("GOL") || s.displayColor === "BLUE"))
+          .length,
     )
     const maxGoals = Math.max(...goalsPerZone, 1)
     return { goalsPerZone, maxGoals }
@@ -391,12 +399,19 @@ const PorteriaAdvanced = ({ events }: { events: Event[] }) => {
               <span className="absolute top-0.5 left-0.5 text-[7px] text-slate-500/50 pointer-events-none">{z}</span>
 
               {shotsInZone.slice(0, 9).map((shot) => {
-                const isGoal = shot.action.startsWith("GOL")
+                const isGoal = shot.displayColor === "BLUE" || (shot.action.startsWith("GOL") && !shot.displayColor)
+                const isOrange = shot.displayColor === "ORANGE"
                 return (
                   <div
                     key={shot.id}
-                    className={`w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-black border ${isGoal ? "bg-green-500 text-black border-green-300 shadow-[0_0_5px_rgba(34,197,94,0.5)]" : "bg-red-500 text-white border-red-300"} `}
-                    title={`${shot.action} - Jugador ${shot.player}`}
+                    className={`w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-black border ${
+                      isGoal
+                        ? "bg-blue-500 text-white border-blue-300 shadow-[0_0_5px_rgba(59,130,246,0.5)]"
+                        : isOrange
+                          ? "bg-orange-500 text-white border-orange-300 shadow-[0_0_5px_rgba(249,115,22,0.5)]"
+                          : "bg-red-500 text-white border-red-300"
+                    } `}
+                    title={`${shot.action} - Jugador ${shot.player}${shot.is_7m ? " (7M)" : ""}`}
                   >
                     {shot.player}
                   </div>
@@ -411,7 +426,13 @@ const PorteriaAdvanced = ({ events }: { events: Event[] }) => {
       </div>
       <div className="flex justify-center gap-4 pb-1 text-[8px] text-slate-400 shrink-0 bg-slate-950/50">
         <div className="flex items-center gap-1">
-          <div className="w-2 h-2 rounded-full bg-green-500"></div> Gol (Vis)
+          <div className="w-2 h-2 rounded-full bg-blue-500"></div> Gol 7M
+        </div>
+        <div className="flex items-center gap-1">
+          <div className="w-2 h-2 rounded-full bg-green-500"></div> Gol
+        </div>
+        <div className="flex items-center gap-1">
+          <div className="w-2 h-2 rounded-full bg-orange-500"></div> Fallo 7M
         </div>
         <div className="flex items-center gap-1">
           <div className="w-2 h-2 rounded-full bg-red-500"></div> Fallo/Parada
@@ -742,7 +763,7 @@ const ActionWizard = ({
               {(currentAction.startsWith("GOL") || ["PARADA", "FUERA", "FALLO 7M"].includes(currentAction)) && (
                 <div className="bg-slate-950/80 p-2 rounded-lg border border-slate-800/50 flex flex-col items-center">
                   <div className="text-[9px] font-bold text-slate-500 mb-1.5 uppercase tracking-widest">
-                    Zona Definición
+                    Zona Definición {currentAction === "FUERA" ? "(Aprox. hacia dónde salió)" : ""}
                   </div>
                   <div className="aspect-square w-full max-w-[120px] grid grid-cols-3 gap-0.5 bg-slate-800 p-0.5 rounded border border-slate-700 shadow-inner">
                     {GOAL_ZONES.map((z) => (
@@ -938,7 +959,18 @@ export default function MatchView() {
     const action = fastAction || currentAction
     if (!info || !action) return
 
+    if (action === "FUERA" && !selectedGoalZone) {
+      alert("Por favor, selecciona la zona aproximada hacia donde salió el balón")
+      return
+    }
+
     handlePossessionChange(action, info.team)
+
+    const is7M = action === "GOL 7M" || action === "FALLO 7M"
+    let displayColor: "BLUE" | "ORANGE" | undefined = undefined
+    if (is7M) {
+      displayColor = action === "GOL 7M" ? "BLUE" : "ORANGE"
+    }
 
     const newEvent: Event = {
       id: Date.now().toString(),
@@ -953,6 +985,8 @@ export default function MatchView() {
       defenseAtMoment: selectedDefense || (info.team === "A" ? defenseB : defenseA),
       turnoverType: selectedTurnoverType || undefined,
       recoveryType: selectedRecoveryType || undefined,
+      is_7m: is7M || undefined,
+      displayColor: displayColor || undefined,
     }
 
     setEvents((prev) => [...prev, newEvent])
