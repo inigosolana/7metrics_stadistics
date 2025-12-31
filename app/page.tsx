@@ -770,7 +770,15 @@ const ActionWizard = ({
                       <Button
                         key={z}
                         variant="ghost"
-                        className={`h-full w-full text-base font-black rounded-sm transition-all p-0 ${selectedGoalZone === z ? (currentAction.startsWith("GOL") ? "bg-green-500 text-black shadow-[inset_0_0_10px_rgba(0,0,0,0.2)]" : "bg-red-500 text-white") : "bg-slate-700/50 text-slate-500 hover:bg-slate-600 hover:text-slate-200"}`}
+                        className={`h-full w-full text-base font-black rounded-sm transition-all p-0 ${
+                          selectedGoalZone === z
+                            ? currentAction.startsWith("GOL")
+                              ? "bg-green-500 text-black shadow-[inset_0_0_10px_rgba(0,0,0,0.2)]"
+                              : currentAction === "FALLO 7M"
+                                ? "bg-orange-500 text-white shadow-[inset_0_0_10px_rgba(0,0,0,0.2)]"
+                                : "bg-red-500 text-white"
+                            : "bg-slate-700/50 text-slate-500 hover:bg-slate-600 hover:text-slate-200"
+                        }`}
                         onClick={() => setSelectedGoalZone(z)}
                       >
                         {z}
