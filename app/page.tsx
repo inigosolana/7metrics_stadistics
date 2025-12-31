@@ -25,18 +25,19 @@ import {
   Plus,
   Undo2,
   Download,
+  AlertTriangle,
 } from "lucide-react"
 
 // --- TIPOS DE DATOS ---
 
-type Player = {
-  number: number
-  name: string
-  isGoalkeeper: boolean
-  position?: "Portero" | "Extremo Izq" | "Extremo Der" | "Lateral Izq" | "Lateral Der" | "Central" | "Pivote"
-  hand?: "Diestro" | "Zurdo"
-}
-
+type TurnoverType =
+  | "Pasos"
+  | "Dobles"
+  | "Falta en ataque"
+  | "Pase y va"
+  | "Recepción fallida"
+  | "Pisando área"
+  | "3 segundos"
 type DefenseType = "6:0" | "5:1" | "3:2:1" | "4:2" | "Mixta" | "Presión" | "Otro"
 
 type Event = {
@@ -50,6 +51,16 @@ type Event = {
   goalZone?: number
   defenseAtMoment?: DefenseType
   context?: string[]
+  turnoverType?: TurnoverType
+  recoveryType?: "Robo" | "Interceptación" | "Falta en Ataque"
+}
+
+type Player = {
+  number: number
+  name: string
+  isGoalkeeper: boolean
+  position?: (typeof POSITIONS)[number]
+  hand?: (typeof HANDS)[number]
 }
 
 type WizardState = "IDLE" | "ACTION_SELECTION" | "DETAILS"
@@ -118,6 +129,12 @@ const LiveFeedPanel = ({ events, onUndo, onExport }: { events: Event[]; onUndo: 
                   </div>
                   {e.context && e.context.length > 0 && (
                     <div className="text-[9px] text-slate-500 mt-0.5">{e.context.join(", ")}</div>
+                  )}
+                  {e.turnoverType && (
+                    <div className="text-[9px] text-red-400 mt-0.5">Tipo Pérdida: {e.turnoverType}</div>
+                  )}
+                  {e.recoveryType && (
+                    <div className="text-[9px] text-cyan-400 mt-0.5">Tipo Recuperación: {e.recoveryType}</div>
                   )}
                 </div>
               </div>
@@ -421,6 +438,11 @@ const ActionWizard = ({
   setSelectedGoalZone,
   selectedDefense,
   setSelectedDefense,
+  // Agregando props para los nuevos estados
+  selectedTurnoverType,
+  setSelectedTurnoverType,
+  selectedRecoveryType,
+  setSelectedRecoveryType,
 }: any) => (
   <div className="bg-slate-900 border border-slate-700 rounded-xl p-3 h-full flex flex-col relative overflow-hidden shadow-2xl min-h-0">
     <div className="flex justify-between items-center mb-2 pb-2 border-b border-slate-700 shrink-0 min-h-[40px]">
@@ -489,6 +511,12 @@ const ActionWizard = ({
               PÉRDIDA / ERROR
             </Button>
             <Button
+              className="h-12 text-sm font-bold bg-cyan-600 hover:bg-cyan-500 col-span-2 border-b-4 border-cyan-800 active:border-0 active:translate-y-1 transition-all"
+              onClick={() => handleActionSelect("RECUPERACIÓN")}
+            >
+              RECUPERACIÓN DE BALÓN
+            </Button>
+            <Button
               variant="outline"
               className="h-10 text-xs border-slate-700 text-slate-400 hover:text-white hover:bg-slate-800 col-span-2 bg-transparent"
               onClick={() => handleActionSelect("ASISTENCIA")}
@@ -510,7 +538,28 @@ const ActionWizard = ({
     {wizardState === "DETAILS" && (
       <div className="flex-1 flex flex-col h-full animate-in slide-in-from-right-10 overflow-hidden pb-14">
         <div className="flex-1 overflow-y-auto space-y-3 p-1 custom-scrollbar">
-          {currentAction === "GOL CAMPO A CAMPO" ? (
+          {currentAction === "GOL 7M" || currentAction === "FALLO 7M" ? (
+            <>
+              {/* Zona Definición - ÚNICA información para 7 metros */}
+              <div className="bg-slate-950/80 p-2 rounded-lg border border-slate-800/50 flex flex-col items-center">
+                <div className="text-[9px] font-bold text-slate-500 mb-1.5 uppercase tracking-widest">
+                  Zona Definición (Localización en Portería)
+                </div>
+                <div className="aspect-square w-full max-w-[120px] grid grid-cols-3 gap-0.5 bg-slate-800 p-0.5 rounded border border-slate-700 shadow-inner">
+                  {GOAL_ZONES.map((z) => (
+                    <Button
+                      key={z}
+                      variant="ghost"
+                      className={`h-full w-full text-base font-black rounded-sm transition-all p-0 ${selectedGoalZone === z ? (currentAction === "GOL 7M" ? "bg-green-500 text-black shadow-[inset_0_0_10px_rgba(0,0,0,0.2)]" : "bg-red-500 text-white") : "bg-slate-700/50 text-slate-500 hover:bg-slate-600 hover:text-slate-200"}`}
+                      onClick={() => setSelectedGoalZone(z)}
+                    >
+                      {z}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            </>
+          ) : currentAction === "GOL CAMPO A CAMPO" ? (
             <>
               {/* Defensa Rival */}
               <div className="bg-slate-950/80 p-2 rounded-lg border border-slate-800/50">
@@ -552,6 +601,58 @@ const ActionWizard = ({
                       </Button>
                     )
                   })}
+                </div>
+              </div>
+            </>
+          ) : currentAction === "PÉRDIDA" ? (
+            <>
+              <div className="bg-slate-950/80 p-2 rounded-lg border border-slate-800/50">
+                <div className="text-[9px] font-bold text-slate-500 mb-1.5 uppercase tracking-widest flex items-center gap-1">
+                  <AlertTriangle className="w-3 h-3" /> Tipo de Pérdida
+                </div>
+                <div className="grid grid-cols-2 gap-1.5">
+                  {(
+                    [
+                      "Pasos",
+                      "Dobles",
+                      "Falta en ataque",
+                      "Pase y va",
+                      "Recepción fallida",
+                      "Pisando área",
+                      "3 segundos",
+                    ] as TurnoverType[]
+                  ).map((type) => (
+                    <Button
+                      key={type}
+                      size="sm"
+                      variant="outline"
+                      className={`h-9 text-[9px] uppercase font-bold px-2 transition-all ${selectedTurnoverType === type ? "bg-red-600 border-red-500 text-white" : "bg-slate-900 border-slate-700 text-slate-400 hover:bg-slate-800"}`}
+                      onClick={() => setSelectedTurnoverType(type)}
+                    >
+                      {type}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            </>
+          ) : currentAction === "RECUPERACIÓN" ? (
+            <>
+              <div className="bg-slate-950/80 p-2 rounded-lg border border-slate-800/50">
+                <div className="text-[9px] font-bold text-slate-500 mb-1.5 uppercase tracking-widest flex items-center gap-1">
+                  <Shield className="w-3 h-3" /> Tipo de Recuperación
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  {(["Robo", "Interceptación", "Falta en Ataque"] as const).map((type) => (
+                    <Button
+                      key={type}
+                      size="sm"
+                      variant="outline"
+                      className={`h-10 text-[10px] uppercase font-bold px-2 transition-all ${selectedRecoveryType === type ? "bg-cyan-600 border-cyan-500 text-white" : "bg-slate-900 border-slate-700 text-slate-400 hover:bg-slate-800"}`}
+                      onClick={() => setSelectedRecoveryType(type)}
+                    >
+                      {type}
+                    </Button>
+                  ))}
                 </div>
               </div>
             </>
@@ -722,6 +823,10 @@ export default function MatchView() {
   const [selectedGoalZone, setSelectedGoalZone] = useState<number | null>(null)
   const [selectedContext, setSelectedContext] = useState<string[]>([])
   const [selectedDefense, setSelectedDefense] = useState<DefenseType | null>(null)
+  const [selectedTurnoverType, setSelectedTurnoverType] = useState<TurnoverType | null>(null)
+  const [selectedRecoveryType, setSelectedRecoveryType] = useState<
+    "Robo" | "Interceptación" | "Falta en Ataque" | null
+  >(null)
 
   useEffect(() => {
     let interval: NodeJS.Timeout
@@ -774,7 +879,8 @@ export default function MatchView() {
       action.includes("PARADA") ||
       action === "FUERA" ||
       action === "PÉRDIDA" ||
-      action === "GOL CAMPO A CAMPO"
+      action === "GOL CAMPO A CAMPO" ||
+      action === "RECUPERACIÓN" // Agregando recuperación
     ) {
       setWizardState("DETAILS")
     } else {
@@ -788,7 +894,15 @@ export default function MatchView() {
 
   const handlePossessionChange = (action: string, team: "A" | "B") => {
     // Only change possession if the event is significant
-    const significantActions = ["GOL", "PÉRDIDA", "PARADA", "INTERCEPTADA", "BALÓN ROBADO", "POSSESSION"] // Added more possession-changing actions
+    const significantActions = [
+      "GOL",
+      "PÉRDIDA",
+      "PARADA",
+      "INTERCEPTADA",
+      "BALÓN ROBADO",
+      "POSSESSION",
+      "RECUPERACIÓN",
+    ] // Added more possession-changing actions
 
     if (!significantActions.includes(action)) {
       return
@@ -807,6 +921,9 @@ export default function MatchView() {
       nextPossessionTeam = team // The team indicated in the event gets possession
     } else if (action === "GOL CAMPO A CAMPO") {
       nextPossessionTeam = team // Goal from own half means possession stays
+    } else if (action === "RECUPERACIÓN") {
+      // Recuperación de balón means the team that recovered it gets possession
+      nextPossessionTeam = team
     }
 
     if (nextPossessionTeam && nextPossessionTeam !== currentPossession) {
@@ -834,9 +951,11 @@ export default function MatchView() {
       goalZone: selectedGoalZone || undefined,
       context: selectedContext.length > 0 ? selectedContext : undefined,
       defenseAtMoment: selectedDefense || (info.team === "A" ? defenseB : defenseA),
+      turnoverType: selectedTurnoverType || undefined,
+      recoveryType: selectedRecoveryType || undefined,
     }
 
-    setEvents((prev) => [newEvent, ...prev])
+    setEvents((prev) => [...prev, newEvent])
     if (action.startsWith("GOL") || action === "GOL CAMPO A CAMPO") {
       info.team === "A" ? setLocalScore((s) => s + 1) : setVisitorScore((s) => s + 1)
     }
@@ -849,6 +968,9 @@ export default function MatchView() {
     setSelectedCourtZone(null)
     setSelectedGoalZone(null)
     setSelectedContext([])
+    setSelectedDefense(null)
+    setSelectedTurnoverType(null)
+    setSelectedRecoveryType(null)
     if (defaultDef) setSelectedDefense(defaultDef)
   }
   const resetUI = () => {
@@ -864,7 +986,9 @@ export default function MatchView() {
     if (events.length === 0) return
     const last = events[0]
     // Undo should also revert possession changes
-    if (["GOL", "PÉRDIDA", "PARADA", "INTERCEPTADA", "BALÓN ROBADO", "POSSESSION"].includes(last.action)) {
+    if (
+      ["GOL", "PÉRDIDA", "PARADA", "INTERCEPTADA", "BALÓN ROBADO", "POSSESSION", "RECUPERACIÓN"].includes(last.action)
+    ) {
       // This is a simplification. A more robust undo would track the previous possession state.
       // For now, we'll just remove the event and not try to precisely revert possession.
       // A full implementation would require storing past possession states.
@@ -874,12 +998,15 @@ export default function MatchView() {
     setEvents((prev) => prev.slice(1))
   }
 
-  const exportData = () => {
+  const downloadCSV = () => {
     const csvContent =
       "data:text/csv;charset=utf-8," +
-      "Time,Team,Player,Action,Defense,Context\n" +
+      "Time,Team,Player,Action,Defense,Context,CourtZone,GoalZone,TurnoverType,RecoveryType\n" +
       events
-        .map((e) => `${e.timeFormatted},${e.team},${e.player},${e.action},${e.defenseAtMoment},${e.context?.join("|")}`)
+        .map(
+          (e) =>
+            `${e.timeFormatted},${e.team},${e.player},${e.action},${e.defenseAtMoment || ""},${e.context?.join("|") || ""},${e.courtZone || ""},${e.goalZone || ""},${e.turnoverType || ""},${e.recoveryType || ""}`,
+        )
         .join("\n")
     const encodedUri = encodeURI(csvContent)
     const link = document.createElement("a")
@@ -1199,6 +1326,11 @@ export default function MatchView() {
                   setSelectedGoalZone={setSelectedGoalZone}
                   selectedDefense={selectedDefense}
                   setSelectedDefense={setSelectedDefense}
+                  // Pasando las nuevas props
+                  selectedTurnoverType={selectedTurnoverType}
+                  setSelectedTurnoverType={setSelectedTurnoverType}
+                  selectedRecoveryType={selectedRecoveryType}
+                  setSelectedRecoveryType={setSelectedRecoveryType}
                 />
               </div>
             ) : (
@@ -1262,6 +1394,11 @@ export default function MatchView() {
                   setSelectedGoalZone={setSelectedGoalZone}
                   selectedDefense={selectedDefense}
                   setSelectedDefense={setSelectedDefense}
+                  // Pasando las nuevas props
+                  selectedTurnoverType={selectedTurnoverType}
+                  setSelectedTurnoverType={setSelectedTurnoverType}
+                  selectedRecoveryType={selectedRecoveryType}
+                  setSelectedRecoveryType={setSelectedRecoveryType}
                 />
               </div>
             ) : (
@@ -1275,14 +1412,14 @@ export default function MatchView() {
               />
             )}
             <div className="hidden lg:flex flex-1 min-h-0">
-              <LiveFeedPanel events={events} onUndo={handleUndo} onExport={exportData} />
+              <LiveFeedPanel events={events} onUndo={handleUndo} onExport={downloadCSV} />
             </div>
           </div>
         </div>
 
         {/* Mobile Live Feed - Bottom slide (hidden on desktop) */}
         <div className="lg:hidden absolute bottom-0 left-0 right-0 bg-slate-950 border-t border-slate-800 p-2 h-[30%] z-20">
-          <LiveFeedPanel events={events} onUndo={handleUndo} onExport={exportData} />
+          <LiveFeedPanel events={events} onUndo={handleUndo} onExport={downloadCSV} />
         </div>
       </div>
     </div>
