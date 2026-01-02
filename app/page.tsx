@@ -54,6 +54,7 @@ type Event = {
   recoveryType?: "Robo" | "Interceptación" | "Falta en Ataque"
   is_7m?: boolean // Flag para identificar lanzamientos de 7 metros
   displayColor?: "BLUE" | "ORANGE" | "GREEN" // Color visual para portería
+  rivalGoalkeeper?: number // Almacenar el número del portero rival que hizo la parada
 }
 
 type Player = {
@@ -508,6 +509,9 @@ const ActionWizard = ({
   setSelectedTurnoverType,
   selectedRecoveryType,
   setSelectedRecoveryType,
+  rivalGoalkeepers,
+  selectedGoalkeeper,
+  setSelectedGoalkeeper,
 }: any) => (
   <div className="bg-slate-900 border border-slate-700 rounded-xl p-3 h-full flex flex-col relative overflow-hidden shadow-2xl min-h-0">
     <div className="flex justify-between items-center mb-2 pb-2 border-b border-slate-700 shrink-0 min-h-[40px]">
@@ -561,7 +565,7 @@ const ActionWizard = ({
               className="h-14 text-base font-black bg-blue-600 hover:bg-blue-500 border-b-4 border-blue-800 active:border-0 active:translate-y-1 transition-all"
               onClick={() => handleActionSelect("PARADA")}
             >
-              PARADA (Rival)
+              PARADA PORTERA
             </Button>
             <Button
               className="h-14 text-base font-black bg-amber-600 hover:bg-amber-500 border-b-4 border-amber-800 active:border-0 active:translate-y-1 transition-all"
@@ -603,6 +607,27 @@ const ActionWizard = ({
     {wizardState === "DETAILS" && (
       <div className="flex-1 flex flex-col h-full animate-in slide-in-from-right-10 overflow-hidden pb-14">
         <div className="flex-1 overflow-y-auto space-y-3 p-1 custom-scrollbar">
+          {currentAction === "PARADA" && rivalGoalkeepers && rivalGoalkeepers.length > 0 && (
+            <div className="bg-slate-950/80 p-2 rounded-lg border border-slate-800/50">
+              <div className="text-[9px] font-bold text-slate-500 mb-1.5 uppercase tracking-widest flex items-center gap-1">
+                <Shield className="w-3 h-3" /> Selecciona Portera Rival
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {rivalGoalkeepers.map((gk: any) => (
+                  <Button
+                    key={gk.number}
+                    variant="outline"
+                    size="sm"
+                    className={`h-10 px-3 font-bold transition-all ${selectedGoalkeeper === gk.number ? "bg-blue-600 border-blue-400 text-white" : "bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700"}`}
+                    onClick={() => setSelectedGoalkeeper(gk.number)}
+                  >
+                    #{gk.number} {gk.name.split(" ").pop()}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {currentAction === "GOL 7M" || currentAction === "FALLO 7M" ? (
             <>
               {/* Zona Definición - ÚNICA información para 7 metros */}
@@ -900,6 +925,7 @@ export default function MatchView() {
   const [selectedRecoveryType, setSelectedRecoveryType] = useState<
     "Robo" | "Interceptación" | "Falta en Ataque" | null
   >(null)
+  const [selectedGoalkeeper, setSelectedGoalkeeper] = useState<number | null>(null) // Estado para portera seleccionada
 
   useEffect(() => {
     let interval: NodeJS.Timeout
@@ -950,10 +976,11 @@ export default function MatchView() {
     if (
       action.includes("GOL") ||
       action.includes("PARADA") ||
+      action.includes("FALLO") || // Asegurar que FALLO 7M pase a DETAILS
       action === "FUERA" ||
       action === "PÉRDIDA" ||
       action === "GOL CAMPO A CAMPO" ||
-      action === "RECUPERACIÓN" // Agregando recuperación
+      action === "RECUPERACIÓN"
     ) {
       setWizardState("DETAILS")
     } else {
@@ -1011,6 +1038,11 @@ export default function MatchView() {
     const action = fastAction || currentAction
     if (!info || !action) return
 
+    if (action === "PARADA" && !selectedGoalkeeper) {
+      alert("Por favor, selecciona la portera que hizo la parada")
+      return
+    }
+
     if (action === "FUERA" && !selectedGoalZone) {
       alert("Por favor, selecciona la zona aproximada hacia donde salió el balón")
       return
@@ -1041,6 +1073,7 @@ export default function MatchView() {
       recoveryType: selectedRecoveryType || undefined,
       is_7m: is7M || undefined,
       displayColor: displayColor || undefined,
+      rivalGoalkeeper: selectedGoalkeeper || undefined, // Guardar portera en el evento
     }
 
     setEvents((prev) => [...prev, newEvent])
@@ -1059,6 +1092,7 @@ export default function MatchView() {
     setSelectedDefense(null)
     setSelectedTurnoverType(null)
     setSelectedRecoveryType(null)
+    setSelectedGoalkeeper(null) // Resetear portera
     if (defaultDef) setSelectedDefense(defaultDef)
   }
   const resetUI = () => {
@@ -1419,6 +1453,9 @@ export default function MatchView() {
                   setSelectedTurnoverType={setSelectedTurnoverType}
                   selectedRecoveryType={selectedRecoveryType}
                   setSelectedRecoveryType={setSelectedRecoveryType}
+                  rivalGoalkeepers={teamBPlayers.filter((p) => p.isGoalkeeper)}
+                  selectedGoalkeeper={selectedGoalkeeper}
+                  setSelectedGoalkeeper={setSelectedGoalkeeper}
                 />
               </div>
             ) : (
@@ -1493,6 +1530,9 @@ export default function MatchView() {
                   setSelectedTurnoverType={setSelectedTurnoverType}
                   selectedRecoveryType={selectedRecoveryType}
                   setSelectedRecoveryType={setSelectedRecoveryType}
+                  rivalGoalkeepers={teamAPlayers.filter((p) => p.isGoalkeeper)}
+                  selectedGoalkeeper={selectedGoalkeeper}
+                  setSelectedGoalkeeper={setSelectedGoalkeeper}
                 />
               </div>
             ) : (
