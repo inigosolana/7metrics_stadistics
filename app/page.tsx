@@ -16,7 +16,6 @@ import {
   History,
   Settings,
   Edit3,
-  Target,
   Shield,
   Maximize2,
   Filter,
@@ -54,7 +53,7 @@ type Event = {
   turnoverType?: TurnoverType
   recoveryType?: "Robo" | "Interceptación" | "Falta en Ataque"
   is_7m?: boolean // Flag para identificar lanzamientos de 7 metros
-  displayColor?: "BLUE" | "ORANGE" // Color visual para portería
+  displayColor?: "BLUE" | "ORANGE" | "GREEN" // Color visual para portería
 }
 
 type Player = {
@@ -323,7 +322,7 @@ const PorteriaAdvanced = ({ events }: { events: Event[] }) => {
     return events.filter((e) => {
       if (e.team !== "B") return false // Solo Visitante
       if (!e.goalZone) return false
-      const isShot = ["GOL", "GOL 7M", "PARADA", "BLOCADO", "FUERA"].some(
+      const isShot = ["GOL", "GOL 7M", "FALLO 7M", "BLOCADO", "FUERA"].some(
         (act) => e.action.startsWith(act) || e.action === act,
       )
       if (!isShot) return false
@@ -336,8 +335,10 @@ const PorteriaAdvanced = ({ events }: { events: Event[] }) => {
   const heatmapScale = useMemo(() => {
     const goalsPerZone = GOAL_ZONES.map(
       (z) =>
-        relevantShots.filter((s) => s.goalZone === z && (s.action.startsWith("GOL") || s.displayColor === "BLUE"))
-          .length,
+        relevantShots.filter(
+          (s) =>
+            s.goalZone === z && (s.action.startsWith("GOL") || s.displayColor === "BLUE" || s.displayColor === "GREEN"),
+        ).length,
     )
     const maxGoals = Math.max(...goalsPerZone, 1)
     return { goalsPerZone, maxGoals }
@@ -359,7 +360,7 @@ const PorteriaAdvanced = ({ events }: { events: Event[] }) => {
           onClick={() => setFilter("ALL")}
           className={`flex-1 text-[9px] h-7 font-bold uppercase ${filter === "ALL" ? "bg-slate-800 text-white" : "text-slate-400"}`}
         >
-          Todos
+          TODOS
         </Button>
         <Button
           variant="ghost"
@@ -367,7 +368,7 @@ const PorteriaAdvanced = ({ events }: { events: Event[] }) => {
           onClick={() => setFilter("WING")}
           className={`flex-1 text-[9px] h-7 font-bold uppercase ${filter === "WING" ? "bg-slate-800 text-white" : "text-slate-400"}`}
         >
-          Extremos
+          EXTREMOS
         </Button>
         <Button
           variant="ghost"
@@ -375,19 +376,10 @@ const PorteriaAdvanced = ({ events }: { events: Event[] }) => {
           onClick={() => setFilter("7M")}
           className={`flex-1 text-[9px] h-7 font-bold uppercase ${filter === "7M" ? "bg-slate-800 text-white" : "text-slate-400"}`}
         >
-          7m
+          7M
         </Button>
       </div>
-
-      <div className="text-[10px] text-amber-400 py-1 text-center font-bold uppercase tracking-widest shrink-0 flex items-center justify-center gap-2">
-        <Target className="w-3 h-3" /> Tiros Visitantes {filter !== "ALL" && `(${filter})`}
-      </div>
-
-      <div className="flex-1 grid grid-cols-3 gap-0.5 p-1 min-h-0 relative">
-        <div className="absolute inset-y-1 left-0 w-1 bg-slate-600 rounded-l pointer-events-none"></div>
-        <div className="absolute inset-y-1 right-0 w-1 bg-slate-600 rounded-r pointer-events-none"></div>
-        <div className="absolute inset-x-1 top-0 h-1 bg-slate-600 rounded-t pointer-events-none"></div>
-
+      <div className="flex-1 p-2 grid grid-cols-3 grid-rows-3 gap-1.5 min-h-0 overflow-hidden">
         {GOAL_ZONES.map((z, index) => {
           const shotsInZone = relevantShots.filter((s) => s.goalZone === z)
           return (
@@ -399,17 +391,20 @@ const PorteriaAdvanced = ({ events }: { events: Event[] }) => {
               <span className="absolute top-0.5 left-0.5 text-[7px] text-slate-500/50 pointer-events-none">{z}</span>
 
               {shotsInZone.slice(0, 9).map((shot) => {
-                const isGoal = shot.displayColor === "BLUE" || (shot.action.startsWith("GOL") && !shot.displayColor)
+                const isBlue = shot.displayColor === "BLUE"
                 const isOrange = shot.displayColor === "ORANGE"
+                const isGreen = shot.displayColor === "GREEN"
                 return (
                   <div
                     key={shot.id}
                     className={`w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-black border ${
-                      isGoal
+                      isBlue
                         ? "bg-blue-500 text-white border-blue-300 shadow-[0_0_5px_rgba(59,130,246,0.5)]"
                         : isOrange
                           ? "bg-orange-500 text-white border-orange-300 shadow-[0_0_5px_rgba(249,115,22,0.5)]"
-                          : "bg-red-500 text-white border-red-300"
+                          : isGreen
+                            ? "bg-green-500 text-white border-green-300 shadow-[0_0_5px_rgba(34,197,94,0.5)]"
+                            : "bg-red-500 text-white border-red-300"
                     } `}
                     title={`${shot.action} - Jugador ${shot.player}${shot.is_7m ? " (7M)" : ""}`}
                   >
@@ -436,6 +431,55 @@ const PorteriaAdvanced = ({ events }: { events: Event[] }) => {
         </div>
         <div className="flex items-center gap-1">
           <div className="w-2 h-2 rounded-full bg-red-500"></div> Fallo/Parada
+        </div>
+      </div>
+    </div>
+  )
+}
+
+const PorteriaLocalSaves = ({ events }: { events: Event[] }) => {
+  const relevantSaves = useMemo(() => {
+    return events.filter((e) => {
+      if (e.team !== "B") return false // Los tiros los hace el visitante
+      if (!e.goalZone) return false
+      return e.action === "PARADA" // Solo paradas
+    })
+  }, [events])
+
+  return (
+    <div className="w-full h-full flex flex-col bg-slate-900 rounded-lg border border-slate-800 overflow-hidden shadow-sm">
+      <div className="flex p-1 bg-emerald-950 border-b border-emerald-800 shrink-0">
+        <div className="flex-1 text-center text-[10px] font-bold uppercase text-emerald-300">PARADAS PORTERO LOCAL</div>
+      </div>
+      <div className="flex-1 p-2 grid grid-cols-3 grid-rows-3 gap-1.5 min-h-0 overflow-hidden">
+        {GOAL_ZONES.map((z) => {
+          const savesInZone = relevantSaves.filter((s) => s.goalZone === z)
+          return (
+            <div
+              key={z}
+              className="relative rounded-sm border border-white/10 flex flex-wrap content-center justify-center items-center gap-0.5 p-0.5 overflow-hidden transition-colors duration-300 bg-slate-800/50"
+            >
+              <span className="absolute top-0.5 left-0.5 text-[7px] text-slate-500/50 pointer-events-none">{z}</span>
+
+              {savesInZone.slice(0, 9).map((save) => (
+                <div
+                  key={save.id}
+                  className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-black border bg-emerald-500 text-white border-emerald-300 shadow-[0_0_5px_rgba(16,185,129,0.5)]"
+                  title={`PARADA - Portero ${save.player}`}
+                >
+                  {save.player}
+                </div>
+              ))}
+              {savesInZone.length > 9 && (
+                <span className="text-[8px] font-bold text-white">+{savesInZone.length - 9}</span>
+              )}
+            </div>
+          )
+        })}
+      </div>
+      <div className="flex justify-center gap-4 pb-1 text-[8px] text-slate-400 shrink-0 bg-slate-950/50">
+        <div className="flex items-center gap-1">
+          <div className="w-2 h-2 rounded-full bg-emerald-500"></div> Parada Portero Local
         </div>
       </div>
     </div>
@@ -975,9 +1019,11 @@ export default function MatchView() {
     handlePossessionChange(action, info.team)
 
     const is7M = action === "GOL 7M" || action === "FALLO 7M"
-    let displayColor: "BLUE" | "ORANGE" | undefined = undefined
+    let displayColor: "BLUE" | "ORANGE" | "GREEN" | undefined = undefined
     if (is7M) {
       displayColor = action === "GOL 7M" ? "BLUE" : "ORANGE"
+    } else if (action === "GOL" || action === "GOL CAMPO A CAMPO") {
+      displayColor = "GREEN"
     }
 
     const newEvent: Event = {
@@ -1408,11 +1454,17 @@ export default function MatchView() {
                 <DialogContent className="w-[95vw] max-w-none h-[85vh] lg:max-w-[1600px] max-h-screen overflow-y-auto bg-slate-950 border-slate-800 border rounded-lg p-4 flex flex-col items-center justify-center">
                   <div className="w-full h-full flex-1">
                     <PorteriaAdvanced events={events} />
+                    <div className="mt-3 h-full">
+                      <PorteriaLocalSaves events={events} />
+                    </div>
                   </div>
                 </DialogContent>
               </Dialog>
 
               <PorteriaAdvanced events={events} />
+              <div className="mt-3 h-full">
+                <PorteriaLocalSaves events={events} />
+              </div>
             </div>
           </div>
 
