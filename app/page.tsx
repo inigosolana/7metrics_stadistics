@@ -323,7 +323,7 @@ const PorteriaAdvanced = ({ events }: { events: Event[] }) => {
     return events.filter((e) => {
       if (e.team !== "B") return false // Solo Visitante
       if (!e.goalZone) return false
-      const isShot = ["GOL", "GOL 7M", "FALLO 7M", "BLOCADO", "FUERA"].some(
+      const isShot = ["GOL", "GOL 7M", "FALLO 7M", "BLOCADO", "FUERA", "PARADA"].some(
         (act) => e.action.startsWith(act) || e.action === act,
       )
       if (!isShot) return false
@@ -443,7 +443,7 @@ const PorteriaLocalSaves = ({ events }: { events: Event[] }) => {
     return events.filter((e) => {
       if (e.team !== "B") return false // Los tiros los hace el visitante
       if (!e.goalZone) return false
-      return e.action === "PARADA" // Solo paradas
+      return e.action === "PARADA"
     })
   }, [events])
 
@@ -607,26 +607,29 @@ const ActionWizard = ({
     {wizardState === "DETAILS" && (
       <div className="flex-1 flex flex-col h-full animate-in slide-in-from-right-10 overflow-hidden pb-14">
         <div className="flex-1 overflow-y-auto space-y-3 p-1 custom-scrollbar">
-          {currentAction === "PARADA" && rivalGoalkeepers && rivalGoalkeepers.length > 0 && (
-            <div className="bg-slate-950/80 p-2 rounded-lg border border-slate-800/50">
-              <div className="text-[9px] font-bold text-slate-500 mb-1.5 uppercase tracking-widest flex items-center gap-1">
-                <Shield className="w-3 h-3" /> Selecciona Portera Rival
+          {/* Added goalkeeper selection for FALLO 7m in ActionWizard */}
+          {(currentAction === "PARADA" || currentAction === "FALLO 7M") &&
+            rivalGoalkeepers &&
+            rivalGoalkeepers.length > 0 && (
+              <div className="bg-slate-950/80 p-2 rounded-lg border border-slate-800/50">
+                <div className="text-[9px] font-bold text-slate-500 mb-1.5 uppercase tracking-widest flex items-center gap-1">
+                  <Shield className="w-3 h-3" /> Selecciona Portera Rival
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {rivalGoalkeepers.map((gk: any) => (
+                    <Button
+                      key={gk.number}
+                      variant="outline"
+                      size="sm"
+                      className={`h-10 px-3 font-bold transition-all ${selectedGoalkeeper === gk.number ? "bg-blue-600 border-blue-400 text-white" : "bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700"}`}
+                      onClick={() => setSelectedGoalkeeper(gk.number)}
+                    >
+                      #{gk.number} {gk.name.split(" ").pop()}
+                    </Button>
+                  ))}
+                </div>
               </div>
-              <div className="flex flex-wrap gap-2">
-                {rivalGoalkeepers.map((gk: any) => (
-                  <Button
-                    key={gk.number}
-                    variant="outline"
-                    size="sm"
-                    className={`h-10 px-3 font-bold transition-all ${selectedGoalkeeper === gk.number ? "bg-blue-600 border-blue-400 text-white" : "bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700"}`}
-                    onClick={() => setSelectedGoalkeeper(gk.number)}
-                  >
-                    #{gk.number} {gk.name.split(" ").pop()}
-                  </Button>
-                ))}
-              </div>
-            </div>
-          )}
+            )}
 
           {currentAction === "GOL 7M" || currentAction === "FALLO 7M" ? (
             <>
@@ -1038,8 +1041,8 @@ export default function MatchView() {
     const action = fastAction || currentAction
     if (!info || !action) return
 
-    if (action === "PARADA" && !selectedGoalkeeper) {
-      alert("Por favor, selecciona la portera que hizo la parada")
+    if ((action === "PARADA" || action === "FALLO 7M") && !selectedGoalkeeper) {
+      alert("Por favor, selecciona la portera rival involucrada")
       return
     }
 
