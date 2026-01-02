@@ -1,6 +1,7 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+/* Simplificando la configuración de colores para evitar problemas de inicialización */
 @custom-variant dark (&:is(.dark *));
 
 /* Sistema de colores VIVOS y CLAROS */
