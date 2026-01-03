@@ -101,9 +101,9 @@ const LiveFeedPanel = ({ events, onUndo, onExport }: { events: Event[]; onUndo: 
             variant="default"
             size="sm"
             onClick={onExport}
-            className="h-8 px-3 bg-green-600 hover:bg-green-500 text-white flex items-center gap-1.5 font-bold text-[10px] uppercase shadow-lg border-b-2 border-green-800"
+            className="h-9 px-4 bg-emerald-500 hover:bg-emerald-400 text-slate-950 flex items-center gap-2 font-black text-xs uppercase shadow-[0_0_15px_rgba(16,185,129,0.3)] border-b-2 border-emerald-700 transition-all active:translate-y-0.5"
           >
-            <Download className="w-3.5 h-3.5" /> <span>Exportar CSV</span>
+            <Download className="w-4 h-4" /> <span>EXPORTAR DATOS CSV</span>
           </Button>
         </div>
       </div>
@@ -227,19 +227,19 @@ const PlayerGrid = ({ team, players, selectedPlayerA, selectedPlayerB, handlePla
     >
       <Trophy className="w-4 h-4" /> {teamName}
     </div>
-    <div className="grid grid-cols-1 gap-2 overflow-y-auto pb-2 pr-1 custom-scrollbar flex-1 content-start min-h-0">
+    <div className="grid grid-cols-1 gap-1.5 flex-1 min-h-0 overflow-hidden">
       {players.map((player: Player) => {
         const isSelected = (team === "A" ? selectedPlayerA : selectedPlayerB) === player.number
         return (
           <Button
             key={player.number}
             variant="outline"
-            className={`h-14 sm:h-16 lg:h-14 flex items-center justify-start px-4 border-slate-700 relative transition-all duration-75 active:scale-95 ${isSelected ? (team === "A" ? "bg-blue-600 border-blue-500 text-white" : "bg-amber-600 border-amber-500 text-white") : "bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white"}`}
+            className={`flex-1 min-h-[40px] flex items-center justify-start px-4 border-slate-700 relative transition-all duration-75 active:scale-95 ${isSelected ? (team === "A" ? "bg-blue-600 border-blue-500 text-white" : "bg-amber-600 border-amber-500 text-white") : "bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white"}`}
             onClick={() => handlePlayerSelect(team, player.number)}
           >
-            <span className="text-2xl sm:text-3xl font-bold leading-none">#{player.number}</span>
+            <span className="text-xl sm:text-2xl lg:text-3xl font-black leading-none italic">#{player.number}</span>
             {player.isGoalkeeper && (
-              <span className="absolute top-1 right-2 text-[10px] bg-slate-950 text-slate-400 px-1.5 py-0.5 rounded border border-slate-700 font-semibold">
+              <span className="absolute top-1 right-2 text-[10px] bg-slate-950 text-blue-400 px-1.5 py-0.5 rounded border border-blue-900/50 font-black">
                 GK
               </span>
             )}
