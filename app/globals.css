@@ -150,3 +150,39 @@
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.3);
 }
+
+/* Estilos optimizados para impresión (Generación de PDF/Informe) */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+
+  body {
+    background: white !important;
+    color: black !important;
+  }
+
+  /* Asegurar que el fondo de la tabla de estadísticas sea visible */
+  .bg-white {
+    background-color: white !important;
+    -webkit-print-color-adjust: exact;
+  }
+
+  .bg-green-600 {
+    background-color: #16a34a !important;
+    -webkit-print-color-adjust: exact;
+  }
+
+  /* Ajustar el layout para que quepan las estadísticas y la portería en una página */
+  .grid {
+    display: block !important;
+  }
+
+  .h-screen {
+    height: auto !important;
+  }
+
+  .overflow-hidden {
+    overflow: visible !important;
+  }
+}

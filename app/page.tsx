@@ -25,6 +25,7 @@ import {
   Undo2,
   Download,
   AlertTriangle,
+  Printer,
 } from "lucide-react"
 
 // --- TIPOS DE DATOS ---
@@ -201,15 +202,22 @@ const HeaderScoreboard = ({
     <div className="flex flex-col items-end min-w-[120px] sm:min-w-[150px]">
       <div className="flex items-center gap-2 mb-1 flex-row-reverse">
         <span className="text-xs text-amber-400 font-bold tracking-wider">VISITANTE (B)</span>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={onExport}
-          className="h-6 w-6 text-slate-500 hover:text-green-400"
-          title="Exportar CSV"
-        >
-          <Download className="w-4 h-4" />
-        </Button>
+        <div className="flex gap-2 no-print ml-4">
+          <Button
+            onClick={() => window.print()}
+            className="h-8 bg-blue-600 hover:bg-blue-500 text-white font-bold text-[10px] uppercase px-3"
+          >
+            <Printer className="w-3 h-3 mr-1.5" />
+            INFORME PDF
+          </Button>
+          <Button
+            onClick={onExport}
+            className="h-8 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-[10px] uppercase px-3 shadow-[0_0_10px_rgba(16,185,129,0.2)]"
+          >
+            <Download className="w-3 h-3 mr-1.5" />
+            CSV
+          </Button>
+        </div>
       </div>
       <div className="flex items-baseline gap-3 flex-row-reverse">
         <span className="text-3xl font-bold text-white leading-none tabular-nums">{visitorScore}</span>
@@ -1132,22 +1140,70 @@ export default function MatchView() {
   }
 
   const downloadCSV = () => {
+    // Cálculo de estadísticas agregadas para el reporte
+    const calc = (team: "A" | "B") => ({
+      goals: events.filter((e) => e.team === team && e.action.startsWith("GOL")).length,
+      shots: events.filter(
+        (e) =>
+          e.team === team &&
+          (e.action.startsWith("GOL") || e.action === "PARADA" || e.action === "FUERA" || e.action === "POSTE"),
+      ).length,
+      saves: events.filter((e) => e.team === team && e.action === "PARADA").length,
+      turnovers: events.filter((e) => e.team === team && e.action === "PÉRDIDA").length,
+      recoveries: events.filter((e) => e.team === team && e.action === "RECUPERACIÓN").length,
+    })
+
+    const statsA = calc("A")
+    const statsB = calc("B")
+
+    // Generar mapa de lanzamientos por zona para el reporte Excel
+    const getGoalMap = (team: "A" | "B") => {
+      const map = Array(9).fill(0)
+      events
+        .filter((e) => e.team === team && e.goalZone)
+        .forEach((e) => {
+          const zone = Number(e.goalZone) - 1
+          if (zone >= 0 && zone < 9) map[zone]++
+        })
+      return map
+    }
+
+    const mapA = getGoalMap("A")
+    const mapB = getGoalMap("B")
+
     const csvContent =
       "data:text/csv;charset=utf-8," +
+      "--- LISTADO DE EVENTOS ---\n" +
       "Time,Team,Player,Action,Defense,Context,CourtZone,GoalZone,TurnoverType,RecoveryType\n" +
       events
         .map(
           (e) =>
             `${e.timeFormatted},${e.team},${e.player},${e.action},${e.defenseAtMoment || ""},${e.context?.join("|") || ""},${e.courtZone || ""},${e.goalZone || ""},${e.turnoverType || ""},${e.recoveryType || ""}`,
         )
-        .join("\n")
+        .join("\n") +
+      "\n\n--- RESUMEN DE ESTADISTICAS ---\n" +
+      `Concepto,${teamAName},${teamBName}\n` +
+      `Goles,${statsA.goals},${statsB.goals}\n` +
+      `Lanzamientos Totales,${statsA.shots},${statsB.shots}\n` +
+      `Efectividad,${statsA.shots ? Math.round((statsA.goals / statsA.shots) * 100) : 0}%,${statsB.shots ? Math.round((statsB.goals / statsB.shots) * 100) : 0}%\n` +
+      `Paradas Recibidas,${statsA.saves},${statsB.saves}\n` +
+      `Perdidas,${statsA.turnovers},${statsB.turnovers}\n` +
+      `Recuperaciones,${statsA.recoveries},${statsB.recoveries}\n` +
+      "\n--- MAPA DE PORTERIA (LANZAMIENTOS POR ZONA) ---\n" +
+      `EQUIPO ${teamAName},,,EQUIPO ${teamBName}\n` +
+      `${mapA[0]},${mapA[1]},${mapA[2]},,${mapB[0]},${mapB[1]},${mapB[2]}\n` +
+      `${mapA[3]},${mapA[4]},${mapA[5]},,${mapB[3]},${mapB[4]},${mapB[5]}\n` +
+      `${mapA[6]},${mapA[7]},${mapA[8]},,${mapB[6]},${mapB[7]},${mapB[8]}\n`
+
     const encodedUri = encodeURI(csvContent)
     const link = document.createElement("a")
     link.setAttribute("href", encodedUri)
-    link.setAttribute("download", "partido_handball.csv")
+    link.setAttribute("download", `partido_handball_${new Date().toISOString().slice(0, 10)}.csv`)
     document.body.appendChild(link)
     link.click()
+    document.body.removeChild(link)
   }
+  // --- FIN CAMBIO ---
 
   // --- SETUP COLUMN ---
   if (appState === "SETUP") {
