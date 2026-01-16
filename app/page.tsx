@@ -259,7 +259,19 @@ const PlayerGrid = ({ team, players, selectedPlayerA, selectedPlayerB, handlePla
 )
 
 // 4. TABLA ESTADÍSTICAS (SIN BOTONES ABAJO)
-const StatsTable = ({ events, teamAName, teamBName }: { events: Event[]; teamAName: string; teamBName: string }) => {
+const StatsTable = ({
+  events,
+  teamAName,
+  teamBName,
+  teamAPlayers,
+  teamBPlayers
+}: {
+  events: Event[];
+  teamAName: string;
+  teamBName: string;
+  teamAPlayers: Player[];
+  teamBPlayers: Player[];
+}) => {
   const stats = useMemo(() => {
     const calculate = (team: "A" | "B") => ({
       goals: events.filter((e) => e.team === team && e.action.startsWith("GOL")).length,
@@ -270,7 +282,7 @@ const StatsTable = ({ events, teamAName, teamBName }: { events: Event[]; teamANa
       ).length,
       saves: events.filter((e) => e.team === team && e.action === "PARADA").length,
       turnovers: events.filter((e) => e.team === team && e.action === "PÉRDIDA").length,
-      possessions: events.filter((e) => e.team === team && e.action === "POSSESSION").length,
+      possessions: events.filter((e) => e.team === team).length,
       recoveries: events.filter((e) => e.team === team && e.action === "RECUPERACIÓN").length,
       goals7m: events.filter((e) => e.team === team && e.action === "GOL 7M").length,
       goalsSup: events.filter(
@@ -291,6 +303,67 @@ const StatsTable = ({ events, teamAName, teamBName }: { events: Event[]; teamANa
 
   const effA = stats.A.shots > 0 ? Math.round((stats.A.goals / stats.A.shots) * 100) : 0
   const effB = stats.B.shots > 0 ? Math.round((stats.B.goals / stats.B.shots) * 100) : 0
+
+  // Goalkeeper Stats - Team A goalkeepers face shots from Team B
+  const gkStatsA = useMemo(() => {
+    const goalkeepers = teamAPlayers.filter(p => p.isGoalkeeper)
+    return goalkeepers.map(gk => {
+      // Shots where this GK was selected as rivalGoalkeeper (shots from Team B)
+      const shotsAgainst = events.filter(e =>
+        e.team === "B" &&
+        e.rivalGoalkeeper === gk.number &&
+        (e.action.startsWith("GOL") || e.action === "PARADA" || e.action === "FALLO 7M")
+      )
+      const saves = shotsAgainst.filter(e => e.action === "PARADA" || e.action === "FALLO 7M").length
+      const goalsConceded = shotsAgainst.filter(e => e.action.startsWith("GOL")).length
+      const totalShots = saves + goalsConceded
+      const savePercentage = totalShots > 0 ? Math.round((saves / totalShots) * 100) : 0
+
+      return {
+        number: gk.number,
+        name: gk.name,
+        saves,
+        goalsConceded,
+        totalShots,
+        savePercentage
+      }
+    }).filter(gk => gk.totalShots > 0) // Only show GKs who faced shots
+  }, [events, teamAPlayers])
+
+  // Goalkeeper Stats - Team B goalkeepers face shots from Team A
+  const gkStatsB = useMemo(() => {
+    const goalkeepers = teamBPlayers.filter(p => p.isGoalkeeper)
+    return goalkeepers.map(gk => {
+      // Shots where this GK was selected as rivalGoalkeeper (shots from Team A)
+      const shotsAgainst = events.filter(e =>
+        e.team === "A" &&
+        e.rivalGoalkeeper === gk.number &&
+        (e.action.startsWith("GOL") || e.action === "PARADA" || e.action === "FALLO 7M")
+      )
+      const saves = shotsAgainst.filter(e => e.action === "PARADA" || e.action === "FALLO 7M").length
+      const goalsConceded = shotsAgainst.filter(e => e.action.startsWith("GOL")).length
+      const totalShots = saves + goalsConceded
+      const savePercentage = totalShots > 0 ? Math.round((saves / totalShots) * 100) : 0
+
+      return {
+        number: gk.number,
+        name: gk.name,
+        saves,
+        goalsConceded,
+        totalShots,
+        savePercentage
+      }
+    }).filter(gk => gk.totalShots > 0) // Only show GKs who faced shots
+  }, [events, teamBPlayers])
+
+  // Overall GK effectiveness
+  const totalShotsA = gkStatsA.reduce((sum, gk) => sum + gk.totalShots, 0)
+  const totalSavesA = gkStatsA.reduce((sum, gk) => sum + gk.saves, 0)
+  const gkEffA = totalShotsA > 0 ? Math.round((totalSavesA / totalShotsA) * 100) : 0
+
+  const totalShotsB = gkStatsB.reduce((sum, gk) => sum + gk.totalShots, 0)
+  const totalSavesB = gkStatsB.reduce((sum, gk) => sum + gk.saves, 0)
+  const gkEffB = totalShotsB > 0 ? Math.round((totalSavesB / totalShotsB) * 100) : 0
 
   const StatRow = ({ label, valA, valB, highlight = false }: any) => (
     <div
@@ -315,7 +388,48 @@ const StatsTable = ({ events, teamAName, teamBName }: { events: Event[]; teamANa
 
       <div className="flex-1 flex flex-col overflow-y-auto custom-scrollbar bg-slate-50/50">
         <StatRow label="Efectividad Tiro" valA={`${effA}%`} valB={`${effB}%`} highlight />
-        <StatRow label="Paradas" valA={stats.A.saves} valB={stats.B.saves} />
+        <StatRow label="Efectividad Portería" valA={`${gkEffA}%`} valB={`${gkEffB}%`} highlight />
+
+        {/* Individual Goalkeeper Stats - Team A */}
+        {gkStatsA.length > 0 && (
+          <>
+            <div className="text-[10px] font-bold text-blue-600 px-2 pt-2 pb-1 bg-blue-50">PORTEROS {teamAName.toUpperCase()}</div>
+            {gkStatsA.map(gk => (
+              <div key={`gkA-${gk.number}`} className="flex items-center text-[10px] py-1.5 px-2 border-b border-slate-200/60 bg-blue-50/30">
+                <div className="flex-1 text-left">
+                  <span className="font-bold text-blue-700">#{gk.number}</span> {gk.name.split(' ').pop()}
+                </div>
+                <div className="flex gap-3 text-slate-600">
+                  <span><span className="font-semibold">{gk.saves}</span> paradas</span>
+                  <span><span className="font-semibold">{gk.totalShots}</span> lanz.</span>
+                  <span className="font-bold text-blue-700">{gk.savePercentage}%</span>
+                </div>
+              </div>
+            ))}
+          </>
+        )}
+
+        {/* Individual Goalkeeper Stats - Team B */}
+        {gkStatsB.length > 0 && (
+          <>
+            <div className="text-[10px] font-bold text-amber-600 px-2 pt-2 pb-1 bg-amber-50">PORTEROS {teamBName.toUpperCase()}</div>
+            {gkStatsB.map(gk => (
+              <div key={`gkB-${gk.number}`} className="flex items-center text-[10px] py-1.5 px-2 border-b border-slate-200/60 bg-amber-50/30">
+                <div className="flex-1 text-left">
+                  <span className="font-bold text-amber-700">#{gk.number}</span> {gk.name.split(' ').pop()}
+                </div>
+                <div className="flex gap-3 text-slate-600">
+                  <span><span className="font-semibold">{gk.saves}</span> paradas</span>
+                  <span><span className="font-semibold">{gk.totalShots}</span> lanz.</span>
+                  <span className="font-bold text-amber-700">{gk.savePercentage}%</span>
+                </div>
+              </div>
+            ))}
+          </>
+        )}
+
+        <div className="my-1 border-t-2 border-slate-300"></div>
+
         <StatRow label="Pérdidas" valA={stats.A.turnovers} valB={stats.B.turnovers} />
         <StatRow label="Recuperaciones" valA={stats.A.recoveries} valB={stats.B.recoveries} />
         <StatRow label="Posesiones" valA={stats.A.possessions} valB={stats.B.possessions} />
@@ -325,8 +439,6 @@ const StatsTable = ({ events, teamAName, teamBName }: { events: Event[]; teamANa
         <StatRow label="Goles Inferioridad" valA={stats.A.goalsInf} valB={stats.B.goalsInf} />
         <StatRow label="Goles Igualdad" valA={stats.A.goalsEq} valB={stats.B.goalsEq} />
       </div>
-
-      {/* BOTONES ELIMINADOS DE AQUÍ SEGÚN PETICIÓN */}
     </div>
   )
 }
@@ -414,15 +526,14 @@ const PorteriaAdvanced = ({ events }: { events: Event[] }) => {
                 return (
                   <div
                     key={shot.id}
-                    className={`w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-black border ${
-                      isBlue
-                        ? "bg-blue-500 text-white border-blue-300 shadow-[0_0_5px_rgba(59,130,246,0.5)]"
-                        : isOrange
-                          ? "bg-orange-500 text-white border-orange-300 shadow-[0_0_5px_rgba(249,115,22,0.5)]"
-                          : isGreen
-                            ? "bg-green-500 text-white border-green-300 shadow-[0_0_5px_rgba(34,197,94,0.5)]"
-                            : "bg-red-500 text-white border-red-300"
-                    } `}
+                    className={`w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-black border ${isBlue
+                      ? "bg-blue-500 text-white border-blue-300 shadow-[0_0_5px_rgba(59,130,246,0.5)]"
+                      : isOrange
+                        ? "bg-orange-500 text-white border-orange-300 shadow-[0_0_5px_rgba(249,115,22,0.5)]"
+                        : isGreen
+                          ? "bg-green-500 text-white border-green-300 shadow-[0_0_5px_rgba(34,197,94,0.5)]"
+                          : "bg-red-500 text-white border-red-300"
+                      } `}
                     title={`${shot.action} - Jugador ${shot.player}${shot.is_7m ? " (7M)" : ""}`}
                   >
                     {shot.player}
@@ -610,12 +721,26 @@ const ActionWizard = ({
             </Button>
           </>
         ) : (
-          <Button
-            className="h-24 text-3xl font-black bg-blue-600 hover:bg-blue-500 col-span-2 border-b-4 border-blue-800"
-            onClick={() => handleActionSelect("PARADA")}
-          >
-            PARADA
-          </Button>
+          <>
+            <Button
+              className="h-16 text-lg font-black bg-green-700 hover:bg-green-600 col-span-2 border-b-4 border-green-900 active:border-0 active:translate-y-1 transition-all"
+              onClick={() => handleActionSelect("GOL CAMPO A CAMPO")}
+            >
+              GOL CAMPO A CAMPO
+            </Button>
+            <Button
+              className="h-16 text-lg font-black bg-amber-600 hover:bg-amber-500 col-span-2 border-b-4 border-amber-800 active:border-0 active:translate-y-1 transition-all"
+              onClick={() => handleActionSelect("FUERA")}
+            >
+              FUERA / POSTE
+            </Button>
+            <Button
+              className="h-16 text-lg font-black bg-red-600 hover:bg-red-500 col-span-2 border-b-4 border-red-800 active:border-0 active:translate-y-1 transition-all"
+              onClick={() => handleActionSelect("PÉRDIDA")}
+            >
+              PÉRDIDA / ERROR
+            </Button>
+          </>
         )}
       </div>
     )}
@@ -623,8 +748,12 @@ const ActionWizard = ({
     {wizardState === "DETAILS" && (
       <div className="flex-1 flex flex-col h-full animate-in slide-in-from-right-10 overflow-hidden pb-14">
         <div className="flex-1 overflow-y-auto space-y-3 p-1 custom-scrollbar">
-          {/* Added goalkeeper selection for FALLO 7m in ActionWizard */}
-          {(currentAction === "PARADA" || currentAction === "FALLO 7M") &&
+          {/* Updated goalkeeper selection for ALL shot types */}
+          {(currentAction === "PARADA" ||
+            currentAction === "FALLO 7M" ||
+            currentAction?.startsWith("GOL") ||
+            currentAction === "FUERA" ||
+            currentAction === "POSTE") &&
             rivalGoalkeepers &&
             rivalGoalkeepers.length > 0 && (
               <div className="bg-slate-950/80 p-2 rounded-lg border border-slate-800/50">
@@ -858,15 +987,14 @@ const ActionWizard = ({
                       <Button
                         key={z}
                         variant="ghost"
-                        className={`h-full w-full text-base font-black rounded-sm transition-all p-0 ${
-                          selectedGoalZone === z
-                            ? currentAction.startsWith("GOL")
-                              ? "bg-green-500 text-black shadow-[inset_0_0_10px_rgba(0,0,0,0.2)]"
-                              : currentAction === "FALLO 7M"
-                                ? "bg-orange-500 text-white shadow-[inset_0_0_10px_rgba(0,0,0,0.2)]"
-                                : "bg-red-500 text-white"
-                            : "bg-slate-700/50 text-slate-500 hover:bg-slate-600 hover:text-slate-200"
-                        }`}
+                        className={`h-full w-full text-base font-black rounded-sm transition-all p-0 ${selectedGoalZone === z
+                          ? currentAction.startsWith("GOL")
+                            ? "bg-green-500 text-black shadow-[inset_0_0_10px_rgba(0,0,0,0.2)]"
+                            : currentAction === "FALLO 7M"
+                              ? "bg-orange-500 text-white shadow-[inset_0_0_10px_rgba(0,0,0,0.2)]"
+                              : "bg-red-500 text-white"
+                          : "bg-slate-700/50 text-slate-500 hover:bg-slate-600 hover:text-slate-200"
+                          }`}
                         onClick={() => setSelectedGoalZone(z)}
                       >
                         {z}
@@ -1057,8 +1185,15 @@ export default function MatchView() {
     const action = fastAction || currentAction
     if (!info || !action) return
 
-    if ((action === "PARADA" || action === "FALLO 7M") && !selectedGoalkeeper) {
-      alert("Por favor, selecciona la portera rival involucrada")
+    if (
+      (action === "PARADA" ||
+        action === "FALLO 7M" ||
+        action.startsWith("GOL") ||
+        action === "FUERA" ||
+        action === "POSTE") &&
+      !selectedGoalkeeper
+    ) {
+      alert("Por favor, selecciona la portería rival involucrada")
       return
     }
 
@@ -1098,6 +1233,13 @@ export default function MatchView() {
     setEvents((prev) => [...prev, newEvent])
     if (action.startsWith("GOL") || action === "GOL CAMPO A CAMPO") {
       info.team === "A" ? setLocalScore((s) => s + 1) : setVisitorScore((s) => s + 1)
+    }
+
+    // Incrementar contador de posesiones automáticamente con cada evento
+    if (info.team === "A") {
+      setPossessionCountA((prev) => prev + 1)
+    } else {
+      setPossessionCountB((prev) => prev + 1)
     }
 
     resetUI()
@@ -1541,7 +1683,13 @@ export default function MatchView() {
           {/* CENTER PANEL - STATS & PORTERIA */}
           <div className="flex flex-col gap-3 h-full min-h-0">
             <div className="h-auto shrink-0">
-              <StatsTable events={events} teamAName={teamAName} teamBName={teamBName} />
+              <StatsTable
+                events={events}
+                teamAName={teamAName}
+                teamBName={teamBName}
+                teamAPlayers={teamAPlayers}
+                teamBPlayers={teamBPlayers}
+              />
             </div>
 
             <div className="flex-1 min-h-0 relative">
