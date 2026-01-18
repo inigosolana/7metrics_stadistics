@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, Shield, AlertTriangle, Filter, CheckCircle2 } from "lucide-react"
 import { DEFENSE_TYPES, COURT_ZONES, GOAL_ZONES, TURNOVER_TYPES, RECOVERY_TYPES } from "@/lib/constants"

@@ -1,4 +1,3 @@
-
 import axios, { AxiosInstance, AxiosError } from 'axios';
 
 // Usa localhost como default si no hay env var

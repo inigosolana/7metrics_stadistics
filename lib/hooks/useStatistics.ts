@@ -1,4 +1,3 @@
-
 import { useQuery } from '@tanstack/react-query';
 import { statisticsApi } from '@/lib/api/statistics';
 

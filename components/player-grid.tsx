@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button"
 import { Trophy } from "lucide-react"
 import { Player } from "@/lib/types/api-types"

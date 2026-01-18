@@ -1,4 +1,3 @@
-
 import { apiClient } from './client';
 import { ENDPOINTS } from './endpoints';
 import { Player, CreatePlayerRequest } from '@/lib/types/api-types';
