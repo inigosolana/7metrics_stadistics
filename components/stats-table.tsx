@@ -1,4 +1,3 @@
-
 import { useMemo } from "react"
 import { Event, Player } from "@/lib/types/api-types"
 

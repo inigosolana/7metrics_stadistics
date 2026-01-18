@@ -1,4 +1,3 @@
-
 import { apiClient } from './client';
 import { ENDPOINTS } from './endpoints';
 import { Event, CreateEventRequest } from '@/lib/types/api-types';

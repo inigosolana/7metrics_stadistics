@@ -1,4 +1,3 @@
-
 import { DefenseType } from "./types/api-types"
 
 export const COURT_ZONES = ["Extremo Izq", "Lateral Izq", "Central", "Lateral Der", "Extremo Der", "Pivote", "9m"]

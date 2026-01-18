@@ -1,4 +1,3 @@
-
 export const ENDPOINTS = {
     // Matches
     MATCH_CREATE: '/matches/',

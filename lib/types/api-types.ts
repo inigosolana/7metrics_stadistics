@@ -1,4 +1,3 @@
-
 export type TeamSide = "A" | "B";
 export type MatchStatus = "SETUP" | "IN_PROGRESS" | "PAUSED" | "FINISHED";
 export type DefenseType = "6:0" | "5:1" | "3:2:1" | "4:2" | "Mixta" | "Presión" | "Otro";
