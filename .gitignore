@@ -52,6 +52,6 @@ logs
 *.log
 
 # Package manager lock files
-# We utilize npm
 pnpm-lock.yaml
 yarn.lock
+# package-lock.json should NOT be ignored for npm projects
