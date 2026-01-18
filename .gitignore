@@ -51,7 +51,7 @@ Thumbs.db
 logs
 *.log
 
-# Package manager lock files (keep pnpm-lock.yaml since the project uses pnpm)
-# node_modules is already ignored above
-package-lock.json
+# Package manager lock files
+# We utilize npm
+pnpm-lock.yaml
 yarn.lock
