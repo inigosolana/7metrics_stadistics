@@ -9,7 +9,11 @@ const nextConfig = {
 
   async rewrites() {
     // La URL del backend real (Render o Localhost)
-    const apiUrl = process.env.API_UPSTREAM_URL || 'http://localhost:8000';
+    let apiUrl = process.env.API_UPSTREAM_URL || 'http://localhost:8000';
+    // Remove trailing slash if present to avoid double slashes in destination
+    if (apiUrl.endsWith('/')) {
+      apiUrl = apiUrl.slice(0, -1);
+    }
     console.log(`[Next.js] Proxy rewriting /api/proxy -> ${apiUrl}`);
 
     return [
