@@ -13,6 +13,24 @@ const nextConfig = {
     console.log(`[Next.js] Proxy rewriting /api/proxy -> ${apiUrl}`);
 
     return [
+      // Force slash for known collections (FastAPI strictness)
+      {
+        source: '/api/proxy/matches',
+        destination: `${apiUrl}/matches/`,
+      },
+      {
+        source: '/api/proxy/events',
+        destination: `${apiUrl}/events/`,
+      },
+      {
+        source: '/api/proxy/matches/:id/players',
+        destination: `${apiUrl}/matches/:id/players/`,
+      },
+      {
+        source: '/api/proxy/matches/:id/statistics',
+        destination: `${apiUrl}/matches/:id/statistics/`,
+      },
+      // Default catch-all
       {
         source: '/api/proxy/:path*',
         destination: `${apiUrl}/:path*`,
