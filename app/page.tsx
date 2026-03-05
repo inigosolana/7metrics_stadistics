@@ -11,6 +11,7 @@ import { ActionWizard, WizardState } from "@/components/action-wizard"
 import { useMatch } from "@/lib/hooks/useMatch"
 import { usePlayers } from "@/lib/hooks/usePlayers"
 import { useCreateEvent, useUndoLastEvent, useEventsByMatch } from "@/lib/hooks/useEvents"
+import { statisticsApi } from "@/lib/api/statistics"
 import { DefenseType, CourtZone, CreateEventRequest } from "@/lib/types/api-types"
 
 export default function MatchView() {
@@ -29,6 +30,26 @@ export default function MatchView() {
   useEffect(() => {
     if (matchId) localStorage.setItem("currentMatchId", matchId)
   }, [matchId])
+
+  // Porteros Activos en Campo (Persistentes)
+  const [activeGoalkeeperA, setActiveGoalkeeperA] = useState<number | null>(null)
+  const [activeGoalkeeperB, setActiveGoalkeeperB] = useState<number | null>(null)
+
+  // Persistencia de Porteros Activos
+  useEffect(() => {
+    const storedGkA = localStorage.getItem(`activeGkA_${matchId}`)
+    const storedGkB = localStorage.getItem(`activeGkB_${matchId}`)
+    if (storedGkA) setActiveGoalkeeperA(Number.parseInt(storedGkA))
+    if (storedGkB) setActiveGoalkeeperB(Number.parseInt(storedGkB))
+  }, [matchId])
+
+  useEffect(() => {
+    if (matchId && activeGoalkeeperA !== null) localStorage.setItem(`activeGkA_${matchId}`, activeGoalkeeperA.toString())
+  }, [matchId, activeGoalkeeperA])
+
+  useEffect(() => {
+    if (matchId && activeGoalkeeperB !== null) localStorage.setItem(`activeGkB_${matchId}`, activeGoalkeeperB.toString())
+  }, [matchId, activeGoalkeeperB])
 
   // --- API HOOKS ---
   const { data: match, isLoading: isLoadingMatch } = useMatch(matchId)
@@ -104,6 +125,13 @@ export default function MatchView() {
     if ((team === "A" && selectedPlayerA !== number) || (team === "B" && selectedPlayerB !== number)) {
       setWizardState("ACTION_SELECTION")
       resetSelectionState()
+
+      // Auto-seleccionar portero rival si hay uno marcado como activo
+      if (team === "A") {
+        setSelectedGoalkeeper(activeGoalkeeperB)
+      } else {
+        setSelectedGoalkeeper(activeGoalkeeperA)
+      }
     } else {
       setWizardState("IDLE")
     }
@@ -181,10 +209,21 @@ export default function MatchView() {
     })
   }
 
-  const handleExport = () => {
-    // TODO: Implementar llamada a API export endpoints cuando esté listo
-    // statisticsApi.exportCsv(matchId)
-    alert("Exportación CSV desde API pendiente de endpoint específico que devuelva blob.")
+  const handleExport = async () => {
+    if (!matchId) return;
+    try {
+      const blob = await statisticsApi.exportCsv(matchId);
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `estadisticas_partido_${matchId}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode?.removeChild(link);
+    } catch (error) {
+      console.error("Error exporting CSV:", error);
+      alert("Error al exportar el CSV. Asegúrate de que el servidor esté disponible.");
+    }
   }
 
   // --- RENDER ---
@@ -226,6 +265,8 @@ export default function MatchView() {
               selectedPlayerA={selectedPlayerA}
               selectedPlayerB={selectedPlayerB}
               handlePlayerSelect={handlePlayerSelect}
+              activeGoalkeeper={activeGoalkeeperA}
+              setActiveGoalkeeper={setActiveGoalkeeperA}
             />
           </div>
           <div className="flex-1 min-h-0 overflow-hidden">
@@ -236,6 +277,8 @@ export default function MatchView() {
               selectedPlayerA={selectedPlayerA}
               selectedPlayerB={selectedPlayerB}
               handlePlayerSelect={handlePlayerSelect}
+              activeGoalkeeper={activeGoalkeeperB}
+              setActiveGoalkeeper={setActiveGoalkeeperB}
             />
           </div>
         </div>
