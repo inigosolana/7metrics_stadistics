@@ -55,3 +55,4 @@ logs
 pnpm-lock.yaml
 yarn.lock
 # package-lock.json should NOT be ignored for npm projects
+package-lock.json

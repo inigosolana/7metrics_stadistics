@@ -172,11 +172,6 @@ export default function MatchView() {
     const action = fastAction || currentAction
     if (!info || !action || !matchId) return
 
-    // Validations (similares al original)
-    if ((action.startsWith("GOL") || action === "PARADA" || action === "FALLO 7M" || action === "FUERA" || action === "POSTE") && !selectedGoalZone && !action.includes("CAMPO A CAMPO")) {
-      alert("Selecciona la zona de la portería")
-      return
-    }
 
     // Build Payload
     const payload: CreateEventRequest = {
@@ -207,6 +202,18 @@ export default function MatchView() {
         // La lista se autoinvalida via hook
       }
     })
+  }
+
+  const handleResetMatch = () => {
+    localStorage.removeItem("currentMatchId")
+    if (matchId) {
+      localStorage.removeItem(`activeGkA_${matchId}`)
+      localStorage.removeItem(`activeGkB_${matchId}`)
+    }
+    setMatchId(null)
+    setTime(0)
+    setIsRunning(false)
+    resetUI()
   }
 
   const handleExport = async () => {
@@ -249,6 +256,7 @@ export default function MatchView() {
         isRunning={isRunning}
         setIsRunning={setIsRunning}
         onExport={handleExport}
+        onReset={handleResetMatch}
         formatTime={formatTime}
       />
 
@@ -334,6 +342,11 @@ export default function MatchView() {
               rivalGoalkeepers={activeInfo ? (activeInfo.team === "A" ? (playersB?.filter(p => p.is_goalkeeper) || []) : (playersA?.filter(p => p.is_goalkeeper) || [])) : []}
               selectedGoalkeeper={selectedGoalkeeper}
               setSelectedGoalkeeper={setSelectedGoalkeeper}
+              activeRivalGoalkeeper={activeInfo?.team === "A" ? activeGoalkeeperB : activeGoalkeeperA}
+              onSetActiveRivalGK={(n) => {
+                if (activeInfo?.team === "A") setActiveGoalkeeperB(n)
+                else setActiveGoalkeeperA(n)
+              }}
             />
           </div>
         </div>

@@ -46,13 +46,19 @@ export function PlayerGrid({
                                 className={`flex-1 min-h-[40px] flex items-center justify-start px-4 border-slate-700 relative transition-all duration-75 active:scale-95 ${isSelected ? (team === "A" ? "bg-blue-600 border-blue-500 text-white" : "bg-amber-600 border-amber-500 text-white") : "bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white"} ${isActiveGK ? "ring-1 ring-green-500 ring-offset-1 ring-offset-slate-900" : ""}`}
                                 onClick={() => handlePlayerSelect(team, player.number)}
                             >
-                                <span className="text-xl sm:text-2xl lg:text-3xl font-black leading-none italic">#{player.number}</span>
-                                {player.is_goalkeeper && (
-                                    <span className="absolute top-1 right-2 text-[10px] bg-slate-950 text-blue-400 px-1.5 py-0.5 rounded border border-blue-900/50 font-black">
-                                        GK
-                                    </span>
-                                )}
-                                <span className="ml-3 text-xs font-normal truncate max-w-[100px] text-slate-400 opacity-80">{player.name}</span>
+                                <span className="text-xl sm:text-2xl lg:text-3xl font-black leading-none italic shrink-0">#{player.number}</span>
+                                <div className="flex flex-col ml-3 min-w-0">
+                                    <div className="flex items-center gap-1.5">
+                                        <span className="text-xs font-bold truncate text-slate-200">
+                                            {player.name}
+                                        </span>
+                                        {player.is_goalkeeper && (
+                                            <span className="text-[8px] leading-none bg-blue-600/30 text-blue-400 px-1 py-0.5 rounded border border-blue-500/30 font-black shrink-0">
+                                                GK
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
                             </Button>
 
                             {player.is_goalkeeper && (

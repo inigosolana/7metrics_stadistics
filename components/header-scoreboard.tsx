@@ -10,6 +10,7 @@ interface HeaderScoreboardProps {
     isRunning: boolean
     setIsRunning: (val: boolean) => void
     onExport: () => void
+    onReset: () => void
     formatTime: (seconds: number) => string
 }
 
@@ -22,6 +23,7 @@ export function HeaderScoreboard({
     isRunning,
     setIsRunning,
     onExport,
+    onReset,
     formatTime,
 }: HeaderScoreboardProps) {
     return (
@@ -80,6 +82,16 @@ export function HeaderScoreboard({
                         >
                             <Download className="w-3 h-3 mr-1.5" />
                             CSV
+                        </Button>
+                        <Button
+                            onClick={() => {
+                                if (window.confirm("¿Estás seguro de que quieres finalizar este partido y borrar los datos locales?")) {
+                                    onReset()
+                                }
+                            }}
+                            className="h-8 bg-red-600/20 hover:bg-red-600 text-red-500 hover:text-white font-bold text-[10px] uppercase px-3 border border-red-900/50"
+                        >
+                            REINICIAR
                         </Button>
                     </div>
                 </div>

@@ -28,6 +28,8 @@ interface ActionWizardProps {
     rivalGoalkeepers: Player[]
     selectedGoalkeeper: number | null
     setSelectedGoalkeeper: (n: number) => void
+    activeRivalGoalkeeper: number | null
+    onSetActiveRivalGK: (n: number) => void
 }
 
 export function ActionWizard({
@@ -53,6 +55,8 @@ export function ActionWizard({
     rivalGoalkeepers,
     selectedGoalkeeper,
     setSelectedGoalkeeper,
+    activeRivalGoalkeeper,
+    onSetActiveRivalGK,
 }: ActionWizardProps) {
     return (
         <div className="bg-slate-900 border border-slate-700 rounded-xl p-3 h-full flex flex-col relative overflow-hidden shadow-2xl min-h-0">
@@ -80,56 +84,56 @@ export function ActionWizard({
                     {!isGoalkeeper ? (
                         <>
                             <Button
-                                className="h-16 text-xl font-black bg-green-600 hover:bg-green-500 col-span-2 border-b-4 border-green-800 active:border-0 active:translate-y-1 transition-all"
+                                className="h-16 text-xl font-black bg-green-600/90 hover:bg-green-500 col-span-2 border-b-4 border-green-800 rounded-xl shadow-[0_4px_14px_0_rgba(22,163,74,0.39)] hover:shadow-[0_6px_20px_rgba(22,163,74,0.4)] hover:-translate-y-1 transition-all"
                                 onClick={() => handleActionSelect("GOL")}
                             >
                                 GOL
                             </Button>
                             <Button
-                                className="h-12 text-sm font-bold bg-green-700 hover:bg-green-600 border-b-4 border-green-900 active:border-0 active:translate-y-1 transition-all"
+                                className="h-14 text-sm font-bold bg-green-700/80 hover:bg-green-600 border-b-4 border-green-900 rounded-xl hover:-translate-y-1 transition-all"
                                 onClick={() => handleActionSelect("GOL 7M")}
                             >
                                 GOL 7m
                             </Button>
                             <Button
-                                className="h-12 text-sm font-bold bg-green-700 hover:bg-green-600 border-b-4 border-green-900 active:border-0 active:translate-y-1 transition-all"
+                                className="h-14 text-sm font-bold bg-green-700/80 hover:bg-green-600 border-b-4 border-green-900 rounded-xl hover:-translate-y-1 transition-all"
                                 onClick={() => handleActionSelect("GOL CAMPO A CAMPO")}
                             >
                                 GOL CAMPO A CAMPO
                             </Button>
                             <Button
-                                className="h-12 text-sm font-bold bg-red-700 hover:bg-red-600 border-b-4 border-red-900 active:border-0 active:translate-y-1 transition-all"
+                                className="h-14 text-sm font-bold bg-red-700/80 hover:bg-red-600 border-b-4 border-red-900 rounded-xl hover:-translate-y-1 transition-all"
                                 onClick={() => handleActionSelect("FALLO 7M")}
                             >
                                 FALLO 7m
                             </Button>
                             <Button
-                                className="h-14 text-base font-black bg-blue-600 hover:bg-blue-500 border-b-4 border-blue-800 active:border-0 active:translate-y-1 transition-all"
+                                className="h-14 text-base font-black bg-blue-600/90 hover:bg-blue-500 border-b-4 border-blue-800 rounded-xl shadow-[0_4px_14px_0_rgba(37,99,235,0.39)] hover:shadow-[0_6px_20px_rgba(37,99,235,0.4)] hover:-translate-y-1 transition-all"
                                 onClick={() => handleActionSelect("PARADA")}
                             >
                                 PARADA PORTERA
                             </Button>
                             <Button
-                                className="h-14 text-base font-black bg-amber-600 hover:bg-amber-500 border-b-4 border-amber-800 active:border-0 active:translate-y-1 transition-all"
+                                className="h-14 text-base font-black bg-amber-600/90 hover:bg-amber-500 border-b-4 border-amber-800 rounded-xl shadow-[0_4px_14px_0_rgba(217,119,6,0.39)] hover:shadow-[0_6px_20px_rgba(217,119,6,0.4)] hover:-translate-y-1 transition-all"
                                 onClick={() => handleActionSelect("FUERA")}
                             >
                                 FUERA / POSTE
                             </Button>
                             <Button
-                                className="h-12 text-sm font-bold bg-red-600 hover:bg-red-500 col-span-2 border-b-4 border-red-800 active:border-0 active:translate-y-1 transition-all"
+                                className="h-14 text-sm font-bold bg-red-600/90 hover:bg-red-500 col-span-2 border-b-4 border-red-800 rounded-xl shadow-[0_4px_14_0_rgba(220,38,38,0.39)] hover:shadow-[0_6px_20px_rgba(220,38,38,0.4)] hover:-translate-y-1 transition-all"
                                 onClick={() => handleActionSelect("PÉRDIDA")}
                             >
                                 PÉRDIDA / ERROR
                             </Button>
                             <Button
-                                className="h-12 text-sm font-bold bg-cyan-600 hover:bg-cyan-500 col-span-2 border-b-4 border-cyan-800 active:border-0 active:translate-y-1 transition-all"
+                                className="h-14 text-sm font-bold bg-cyan-600/90 hover:bg-cyan-500 col-span-2 border-b-4 border-cyan-800 rounded-xl shadow-[0_4px_14px_0_rgba(8,145,178,0.39)] hover:shadow-[0_6px_20px_rgba(8,145,178,0.4)] hover:-translate-y-1 transition-all"
                                 onClick={() => handleActionSelect("RECUPERACIÓN")}
                             >
                                 RECUPERACIÓN DE BALÓN
                             </Button>
                             <Button
                                 variant="outline"
-                                className="h-10 text-xs border-slate-700 text-slate-400 hover:text-white hover:bg-slate-800 col-span-2 bg-transparent"
+                                className="h-12 text-xs border-slate-700 text-slate-400 hover:text-white hover:bg-slate-800 col-span-2 bg-slate-950/30 rounded-xl backdrop-blur-sm transition-all"
                                 onClick={() => handleActionSelect("ASISTENCIA")}
                             >
                                 Asistencia / Otro
@@ -161,8 +165,8 @@ export function ActionWizard({
             )}
 
             {wizardState === "DETAILS" && (
-                <div className="flex-1 flex flex-col h-full animate-in slide-in-from-right-10 overflow-hidden pb-14">
-                    <div className="flex-1 overflow-y-auto space-y-3 p-1 custom-scrollbar">
+                <div className="flex-1 flex flex-col min-h-0 animate-in slide-in-from-right-10 overflow-hidden">
+                    <div className="flex-1 overflow-y-auto space-y-4 p-1 custom-scrollbar">
                         {/* Updated goalkeeper selection for ALL shot types */}
                         {(currentAction === "PARADA" ||
                             currentAction === "FALLO 7M" ||
@@ -172,60 +176,80 @@ export function ActionWizard({
                             rivalGoalkeepers &&
                             rivalGoalkeepers.length > 0 && (
                                 <div className="bg-slate-950/80 p-2 rounded-lg border border-slate-800/50">
-                                    <div className="text-[9px] font-bold text-slate-500 mb-1.5 uppercase tracking-widest flex items-center gap-1">
-                                        <Shield className="w-3 h-3" /> Selecciona Portera Rival
+                                    <div className="text-[9px] font-bold text-slate-500 mb-1.5 uppercase tracking-widest flex items-center justify-between">
+                                        <span className="flex items-center gap-1"><Shield className="w-3 h-3" /> Selecciona Portera Rival</span>
+                                        <span className="text-[8px] opacity-60">Escudo = Portera Principal</span>
                                     </div>
-                                    <div className="flex flex-wrap gap-2">
-                                        {/* Nota: p.id es string en API pero el estado local selectedGoalkeeper es number.
-                         Asumiremos que usaremos number para la lógica interna del wizard por compatibilidad */}
-                                        {rivalGoalkeepers.map((gk: any) => (
-                                            <Button
-                                                key={gk.number}
-                                                variant="outline"
-                                                size="sm"
-                                                className={`h-10 px-3 font-bold transition-all ${selectedGoalkeeper === gk.number ? "bg-blue-600 border-blue-400 text-white" : "bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700"}`}
-                                                onClick={() => setSelectedGoalkeeper(gk.number)}
-                                            >
-                                                #{gk.number} {gk.name.split(" ").pop()}
-                                            </Button>
-                                        ))}
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                        {rivalGoalkeepers.map((gk: any) => {
+                                            const isActive = activeRivalGoalkeeper === gk.number;
+                                            const isSelected = selectedGoalkeeper === gk.number;
+                                            return (
+                                                <div
+                                                    key={gk.number}
+                                                    className={`flex items-stretch rounded-lg overflow-hidden border transition-all ${isSelected ? "border-blue-500 ring-1 ring-blue-500/30 shadow-[0_0_15px_rgba(59,130,246,0.2)]" : "border-slate-700 bg-slate-900/50"}`}
+                                                >
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        className={`h-12 flex-1 justify-start px-3 rounded-none font-bold transition-colors ${isSelected ? "bg-blue-600/20 text-blue-200" : "text-slate-400 hover:bg-slate-800 hover:text-white"}`}
+                                                        onClick={() => setSelectedGoalkeeper(gk.number)}
+                                                    >
+                                                        <span className={`text-sm ${isSelected ? "text-blue-400" : "text-slate-500"}`}>#{gk.number}</span>
+                                                        <span className="ml-2 truncate max-w-[80px]">{gk.name.split(" ").pop()}</span>
+                                                    </Button>
+
+                                                    <Button
+                                                        size="icon"
+                                                        variant="ghost"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            onSetActiveRivalGK(gk.number);
+                                                            setSelectedGoalkeeper(gk.number);
+                                                        }}
+                                                        className={`w-10 rounded-none border-l border-slate-800 transition-all ${isActive ? "bg-green-600/40 text-green-400" : "bg-slate-950/30 text-slate-600 hover:text-slate-300 hover:bg-slate-800"}`}
+                                                        title={isActive ? "Portera actual" : "Marcar como portera principal"}
+                                                    >
+                                                        <Shield className={`w-4 h-4 ${isActive ? "fill-current" : ""}`} />
+                                                    </Button>
+                                                </div>
+                                            )
+                                        })}
                                     </div>
                                 </div>
                             )}
 
                         {currentAction === "GOL 7M" || currentAction === "FALLO 7M" ? (
-                            <>
-                                <div className="bg-slate-950/80 p-2 rounded-lg border border-slate-800/50 flex flex-col items-center">
-                                    <div className="text-[9px] font-bold text-slate-500 mb-1.5 uppercase tracking-widest">
-                                        Zona Definición (Localización en Portería)
-                                    </div>
-                                    <div className="aspect-square w-full max-w-[120px] grid grid-cols-3 gap-0.5 bg-slate-800 p-0.5 rounded border border-slate-700 shadow-inner">
-                                        {GOAL_ZONES.map((z) => (
-                                            <Button
-                                                key={z}
-                                                variant="ghost"
-                                                className={`h-full w-full text-base font-black rounded-sm transition-all p-0 ${selectedGoalZone === z ? (currentAction === "GOL 7M" ? "bg-green-500 text-black shadow-[inset_0_0_10px_rgba(0,0,0,0.2)]" : "bg-red-500 text-white") : "bg-slate-700/50 text-slate-500 hover:bg-slate-600 hover:text-slate-200"}`}
-                                                onClick={() => setSelectedGoalZone(z)}
-                                            >
-                                                {z}
-                                            </Button>
-                                        ))}
-                                    </div>
+                            <div className="bg-slate-950/40 p-3 rounded-xl border border-slate-800/60 flex flex-col items-center">
+                                <div className="text-[10px] font-black text-slate-500 mb-3 uppercase tracking-[0.2em]">
+                                    Zona Definición
                                 </div>
-                            </>
+                                <div className="aspect-[4/3] w-full max-w-[180px] grid grid-cols-3 gap-1 bg-slate-800 p-1 rounded-lg border border-slate-700 shadow-[inset_0_2px_10px_rgba(0,0,0,0.5)]">
+                                    {GOAL_ZONES.map((z) => (
+                                        <Button
+                                            key={z}
+                                            variant="ghost"
+                                            className={`h-full w-full text-xl font-black rounded transition-all p-0 ${selectedGoalZone === z ? (currentAction === "GOL 7M" ? "bg-green-500 text-black shadow-lg" : "bg-red-500 text-white shadow-lg") : "bg-slate-700/50 text-slate-500 hover:bg-slate-600 hover:text-slate-200"}`}
+                                            onClick={() => setSelectedGoalZone(z)}
+                                        >
+                                            {z}
+                                        </Button>
+                                    ))}
+                                </div>
+                            </div>
                         ) : currentAction === "GOL CAMPO A CAMPO" ? (
                             <>
-                                <div className="bg-slate-950/80 p-2 rounded-lg border border-slate-800/50">
-                                    <div className="text-[9px] font-bold text-slate-500 mb-1.5 uppercase tracking-widest flex items-center gap-1">
-                                        <Shield className="w-3 h-3" /> Defensa Rival (Momento)
+                                <div className="bg-slate-950/40 p-3 rounded-xl border border-slate-800/60">
+                                    <div className="text-[10px] font-black text-slate-500 mb-3 uppercase tracking-[0.2em] flex items-center gap-2">
+                                        <Shield className="w-3.5 h-3.5 text-indigo-400" /> Defensa Rival
                                     </div>
-                                    <div className="flex flex-wrap gap-1.5">
+                                    <div className="flex flex-wrap gap-2">
                                         {DEFENSE_TYPES.map((dt) => (
                                             <Button
                                                 key={dt}
                                                 size="sm"
                                                 variant="outline"
-                                                className={`h-7 text-[9px] uppercase font-bold px-2 transition-all ${selectedDefense === dt ? "bg-indigo-600 border-indigo-500 text-white" : "bg-slate-900 border-slate-700 text-slate-400 hover:bg-slate-800"}`}
+                                                className={`h-8 text-[10px] uppercase font-black px-3 transition-all rounded-md ${selectedDefense === dt ? "bg-indigo-600 border-indigo-500 text-white shadow-lg" : "bg-slate-900 border-slate-700 text-slate-400 hover:bg-slate-800 hover:text-white"}`}
                                                 onClick={() => setSelectedDefense(dt)}
                                             >
                                                 {dt}
@@ -234,9 +258,9 @@ export function ActionWizard({
                                     </div>
                                 </div>
 
-                                <div className="bg-slate-950/80 p-2 rounded-lg border border-slate-800/50">
-                                    <div className="text-[9px] font-bold text-slate-500 mb-1.5 uppercase tracking-widest flex items-center gap-1">
-                                        <Filter className="w-3 h-3" /> Contexto Táctico
+                                <div className="bg-slate-950/40 p-3 rounded-xl border border-slate-800/60">
+                                    <div className="text-[10px] font-black text-slate-500 mb-3 uppercase tracking-[0.2em] flex items-center gap-2">
+                                        <Filter className="w-3.5 h-3.5 text-amber-400" /> Situación Táctica
                                     </div>
                                     <div className="grid grid-cols-3 gap-2">
                                         {["Igualdad", "Superioridad", "Inferioridad"].map((ctx) => {
@@ -246,7 +270,7 @@ export function ActionWizard({
                                                     key={ctx}
                                                     size="sm"
                                                     variant="outline"
-                                                    className={`h-8 text-[10px] uppercase font-bold px-2 transition-all ${isActive ? "bg-slate-100 text-slate-900 border-white" : "bg-slate-900 border-slate-700 text-slate-400 hover:bg-slate-800"}`}
+                                                    className={`h-9 text-[10px] uppercase font-black rounded-md transition-all ${isActive ? "bg-amber-600 text-white border-amber-500 shadow-lg" : "bg-slate-900 border-slate-700 text-slate-400 hover:bg-slate-800"}`}
                                                     onClick={() => toggleContext(ctx)}
                                                 >
                                                     {ctx}
@@ -257,60 +281,56 @@ export function ActionWizard({
                                 </div>
                             </>
                         ) : currentAction === "PÉRDIDA" ? (
-                            <>
-                                <div className="bg-slate-950/80 p-2 rounded-lg border border-slate-800/50">
-                                    <div className="text-[9px] font-bold text-slate-500 mb-1.5 uppercase tracking-widest flex items-center gap-1">
-                                        <AlertTriangle className="w-3 h-3" /> Tipo de Pérdida
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-1.5">
-                                        {TURNOVER_TYPES.map((type) => (
-                                            <Button
-                                                key={type}
-                                                size="sm"
-                                                variant="outline"
-                                                className={`h-9 text-[9px] uppercase font-bold px-2 transition-all ${selectedTurnoverType === type ? "bg-red-600 border-red-500 text-white" : "bg-slate-900 border-slate-700 text-slate-400 hover:bg-slate-800"}`}
-                                                onClick={() => setSelectedTurnoverType(type)}
-                                            >
-                                                {type}
-                                            </Button>
-                                        ))}
-                                    </div>
+                            <div className="bg-slate-950/40 p-3 rounded-xl border border-slate-800/60">
+                                <div className="text-[10px] font-black text-slate-500 mb-3 uppercase tracking-[0.2em] flex items-center gap-2">
+                                    <AlertTriangle className="w-3.5 h-3.5 text-red-400" /> Clasificación de Pérdida
                                 </div>
-                            </>
+                                <div className="grid grid-cols-2 gap-2">
+                                    {TURNOVER_TYPES.map((type) => (
+                                        <Button
+                                            key={type}
+                                            size="sm"
+                                            variant="outline"
+                                            className={`h-10 text-[10px] uppercase font-black px-2 rounded-md transition-all ${selectedTurnoverType === type ? "bg-red-600 border-red-500 text-white shadow-lg" : "bg-slate-900 border-slate-700 text-slate-400 hover:bg-slate-800"}`}
+                                            onClick={() => setSelectedTurnoverType(type)}
+                                        >
+                                            {type}
+                                        </Button>
+                                    ))}
+                                </div>
+                            </div>
                         ) : currentAction === "RECUPERACIÓN" ? (
-                            <>
-                                <div className="bg-slate-950/80 p-2 rounded-lg border border-slate-800/50">
-                                    <div className="text-[9px] font-bold text-slate-500 mb-1.5 uppercase tracking-widest flex items-center gap-1">
-                                        <Shield className="w-3 h-3" /> Tipo de Recuperación
-                                    </div>
-                                    <div className="grid grid-cols-3 gap-2">
-                                        {RECOVERY_TYPES.map((type) => (
-                                            <Button
-                                                key={type}
-                                                size="sm"
-                                                variant="outline"
-                                                className={`h-10 text-[10px] uppercase font-bold px-2 transition-all ${selectedRecoveryType === type ? "bg-cyan-600 border-cyan-500 text-white" : "bg-slate-900 border-slate-700 text-slate-400 hover:bg-slate-800"}`}
-                                                onClick={() => setSelectedRecoveryType(type)}
-                                            >
-                                                {type}
-                                            </Button>
-                                        ))}
-                                    </div>
+                            <div className="bg-slate-950/40 p-3 rounded-xl border border-slate-800/60">
+                                <div className="text-[10px] font-black text-slate-500 mb-3 uppercase tracking-[0.2em] flex items-center gap-2">
+                                    <Shield className="w-3.5 h-3.5 text-cyan-400" /> Método de Recuperación
                                 </div>
-                            </>
+                                <div className="grid grid-cols-3 gap-2">
+                                    {RECOVERY_TYPES.map((type) => (
+                                        <Button
+                                            key={type}
+                                            size="sm"
+                                            variant="outline"
+                                            className={`h-11 text-[10px] uppercase font-black rounded-md transition-all ${selectedRecoveryType === type ? "bg-cyan-600 border-cyan-500 text-white shadow-lg" : "bg-slate-900 border-slate-700 text-slate-400 hover:bg-slate-800"}`}
+                                            onClick={() => setSelectedRecoveryType(type)}
+                                        >
+                                            {type}
+                                        </Button>
+                                    ))}
+                                </div>
+                            </div>
                         ) : (
                             <>
-                                <div className="bg-slate-950/80 p-2 rounded-lg border border-slate-800/50">
-                                    <div className="text-[9px] font-bold text-slate-500 mb-1.5 uppercase tracking-widest flex items-center gap-1">
-                                        <Shield className="w-3 h-3" /> Defensa Rival (Momento)
+                                <div className="bg-slate-950/40 p-3 rounded-xl border border-slate-800/60">
+                                    <div className="text-[10px] font-black text-slate-500 mb-3 uppercase tracking-[0.2em] flex items-center gap-2">
+                                        <Shield className="w-3.5 h-3.5 text-indigo-400" /> Defensa Rival
                                     </div>
-                                    <div className="flex flex-wrap gap-1.5">
+                                    <div className="flex flex-wrap gap-2">
                                         {DEFENSE_TYPES.map((dt) => (
                                             <Button
                                                 key={dt}
                                                 size="sm"
                                                 variant="outline"
-                                                className={`h-7 text-[9px] uppercase font-bold px-2 transition-all ${selectedDefense === dt ? "bg-indigo-600 border-indigo-500 text-white" : "bg-slate-900 border-slate-700 text-slate-400 hover:bg-slate-800"}`}
+                                                className={`h-8 text-[10px] uppercase font-black px-3 transition-all rounded-md ${selectedDefense === dt ? "bg-indigo-600 border-indigo-500 text-white shadow-lg" : "bg-slate-900 border-slate-700 text-slate-400 hover:bg-slate-800 hover:text-white"}`}
                                                 onClick={() => setSelectedDefense(dt)}
                                             >
                                                 {dt}
@@ -320,33 +340,19 @@ export function ActionWizard({
                                 </div>
 
                                 {currentAction?.startsWith("GOL") && (
-                                    <div className="bg-slate-950/80 p-2 rounded-lg border border-slate-800/50">
-                                        <div className="text-[9px] font-bold text-slate-500 mb-1.5 uppercase tracking-widest flex items-center gap-1">
-                                            <Filter className="w-3 h-3" /> Contexto Táctico
+                                    <div className="bg-slate-950/40 p-3 rounded-xl border border-slate-800/60">
+                                        <div className="text-[10px] font-black text-slate-500 mb-3 uppercase tracking-[0.2em] flex items-center gap-2">
+                                            <Filter className="w-3.5 h-3.5 text-amber-400" /> Situación Táctica
                                         </div>
                                         <div className="grid grid-cols-2 gap-2">
-                                            {["Igualdad", "Superioridad"].map((ctx) => {
+                                            {["Igualdad", "Superioridad", "Inferioridad", "Contraataque"].map((ctx) => {
                                                 const isActive = selectedContext.includes(ctx)
                                                 return (
                                                     <Button
                                                         key={ctx}
                                                         size="sm"
                                                         variant="outline"
-                                                        className={`h-8 text-[10px] uppercase font-bold px-2 transition-all ${isActive ? "bg-slate-100 text-slate-900 border-white" : "bg-slate-900 border-slate-700 text-slate-400 hover:bg-slate-800"}`}
-                                                        onClick={() => toggleContext(ctx)}
-                                                    >
-                                                        {ctx}
-                                                    </Button>
-                                                )
-                                            })}
-                                            {["Inferioridad", "Contraataque"].map((ctx) => {
-                                                const isActive = selectedContext.includes(ctx)
-                                                return (
-                                                    <Button
-                                                        key={ctx}
-                                                        size="sm"
-                                                        variant="outline"
-                                                        className={`h-8 text-[10px] uppercase font-bold px-2 transition-all ${isActive ? "bg-slate-100 text-slate-900 border-white" : "bg-slate-900 border-slate-700 text-slate-400 hover:bg-slate-800"}`}
+                                                        className={`h-9 text-[10px] uppercase font-black rounded-md transition-all ${isActive ? "bg-amber-600 text-white border-amber-500 shadow-lg" : "bg-slate-900 border-slate-700 text-slate-400 hover:bg-slate-800"}`}
                                                         onClick={() => toggleContext(ctx)}
                                                     >
                                                         {ctx}
@@ -358,16 +364,16 @@ export function ActionWizard({
                                 )}
 
                                 {!currentAction?.includes("7M") && ["GOL", "PARADA", "FUERA", "PÉRDIDA"].includes(currentAction || "") && (
-                                    <div className="bg-slate-950/80 p-2 rounded-lg border border-slate-800/50">
-                                        <div className="text-[9px] font-bold text-slate-500 mb-1.5 uppercase tracking-widest">
-                                            Zona Origen
+                                    <div className="bg-slate-950/40 p-3 rounded-xl border border-slate-800/60">
+                                        <div className="text-[10px] font-black text-slate-500 mb-3 uppercase tracking-[0.2em]">
+                                            Zona Origen Lanzamiento
                                         </div>
-                                        <div className="grid grid-cols-3 gap-1">
-                                            {COURT_ZONES.map((z: any) => ( // Cast to any to avoid strict type error vs CourtZone string
+                                        <div className="grid grid-cols-3 gap-1.5">
+                                            {COURT_ZONES.map((z: any) => (
                                                 <Button
                                                     key={z}
                                                     size="sm"
-                                                    className={`h-7 text-[8px] font-bold leading-tight border transition-all ${selectedCourtZone === z ? "bg-blue-600 text-white border-blue-400 shadow-sm" : "bg-slate-800/50 text-slate-300 border-slate-700 hover:bg-slate-700"}`}
+                                                    className={`h-8 text-[9px] font-black uppercase leading-tight border rounded-md transition-all ${selectedCourtZone === z ? "bg-blue-600 text-white border-blue-400 shadow-md" : "bg-slate-800/50 text-slate-500 border-slate-700 hover:bg-slate-700 hover:text-slate-200"}`}
                                                     onClick={() => setSelectedCourtZone(z)}
                                                 >
                                                     {z}
@@ -378,21 +384,21 @@ export function ActionWizard({
                                 )}
 
                                 {(currentAction?.startsWith("GOL") || ["PARADA", "FUERA", "FALLO 7M"].includes(currentAction || "")) && (
-                                    <div className="bg-slate-950/80 p-2 rounded-lg border border-slate-800/50 flex flex-col items-center">
-                                        <div className="text-[9px] font-bold text-slate-500 mb-1.5 uppercase tracking-widest">
-                                            Zona Definición {currentAction === "FUERA" ? "(Aprox. hacia dónde salió)" : ""}
+                                    <div className="bg-slate-950/40 p-3 rounded-xl border border-slate-800/60 flex flex-col items-center">
+                                        <div className="text-[10px] font-black text-slate-500 mb-3 uppercase tracking-[0.2em] text-center">
+                                            Portería {currentAction === "FUERA" ? "(Zona de fallo)" : ""}
                                         </div>
-                                        <div className="aspect-square w-full max-w-[120px] grid grid-cols-3 gap-0.5 bg-slate-800 p-0.5 rounded border border-slate-700 shadow-inner">
+                                        <div className="aspect-[4/3] w-full max-w-[180px] grid grid-cols-3 gap-1 bg-slate-800 p-1 rounded-lg border border-slate-700 shadow-[inset_0_2px_10px_rgba(0,0,0,0.5)]">
                                             {GOAL_ZONES.map((z) => (
                                                 <Button
                                                     key={z}
                                                     variant="ghost"
-                                                    className={`h-full w-full text-base font-black rounded-sm transition-all p-0 ${selectedGoalZone === z
+                                                    className={`h-full w-full text-xl font-black rounded transition-all p-0 ${selectedGoalZone === z
                                                         ? currentAction?.startsWith("GOL")
-                                                            ? "bg-green-500 text-black shadow-[inset_0_0_10px_rgba(0,0,0,0.2)]"
+                                                            ? "bg-green-500 text-black shadow-lg"
                                                             : currentAction === "FALLO 7M"
-                                                                ? "bg-orange-500 text-white shadow-[inset_0_0_10px_rgba(0,0,0,0.2)]"
-                                                                : "bg-red-500 text-white"
+                                                                ? "bg-orange-500 text-white shadow-lg"
+                                                                : "bg-red-500 text-white shadow-lg"
                                                         : "bg-slate-700/50 text-slate-500 hover:bg-slate-600 hover:text-slate-200"
                                                         }`}
                                                     onClick={() => setSelectedGoalZone(z)}
@@ -407,10 +413,10 @@ export function ActionWizard({
                         )}
                     </div>
 
-                    <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-slate-900 via-slate-900 to-transparent">
+                    <div className="pt-3 border-t border-slate-700 mt-2 bg-slate-900/90 backdrop-blur-sm shrink-0">
                         <Button
                             size="lg"
-                            className="w-full h-11 bg-green-600 hover:bg-green-500 text-white shadow-xl font-black tracking-[0.15em] text-base uppercase border-t border-green-400/20 transition-transform active:scale-[0.98]"
+                            className="w-full h-12 bg-green-600 hover:bg-green-500 text-white shadow-xl font-black tracking-[0.15em] text-base uppercase border-b-4 border-green-800 rounded-xl transition-all active:translate-y-1 active:border-b-0"
                             onClick={() => confirmEvent()}
                         >
                             CONFIRMAR <CheckCircle2 className="w-5 h-5 ml-2 animate-pulse" />
