@@ -211,7 +211,7 @@ export function ActionWizard({
                                                     <Button
                                                         variant="ghost"
                                                         size="sm"
-                                                    className={`h-10 sm:h-12 flex-1 justify-start px-2 sm:px-3 rounded-none font-black transition-colors ${isSelected
+                                                        className={`h-12 flex-1 justify-start px-2 sm:px-3 rounded-none font-black transition-colors ${isSelected
                                                             ? (isNightMode ? "bg-blue-600/20 text-blue-200" : "bg-blue-50 text-blue-600")
                                                             : (isNightMode ? "text-slate-400 hover:bg-white/5" : "text-slate-500 hover:bg-slate-50")}`}
                                                         onClick={() => setSelectedGoalkeeper(gk.number)}
@@ -228,7 +228,7 @@ export function ActionWizard({
                                                             onSetActiveRivalGK(gk.number);
                                                             setSelectedGoalkeeper(gk.number);
                                                         }}
-                                                        className={`w-10 sm:w-12 rounded-none border-l transition-all ${isNightMode ? 'border-white/5' : 'border-slate-200'} ${isActive
+                                                        className={`w-10 sm:w-12 h-full rounded-none border-l transition-all ${isNightMode ? 'border-white/5' : 'border-slate-200'} ${isActive
                                                             ? (isNightMode ? "bg-green-600/20 text-green-400" : "bg-green-50 text-green-600")
                                                             : (isNightMode ? "bg-black/20 text-slate-600 hover:text-slate-300" : "bg-slate-50/50 text-slate-300 hover:text-slate-600")}`}
                                                         title={isActive ? "Portera actual" : "Marcar como portera principal"}

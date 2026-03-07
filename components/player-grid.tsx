@@ -47,25 +47,25 @@ export function PlayerGrid({
                     const isActiveGK = activeGoalkeeper === player.number
 
                     const selectedStyle = isTeamA
-                        ? "bg-blue-600 border-blue-400 text-white shadow-xl ring-2 ring-blue-500/20"
-                        : "bg-amber-500 border-amber-300 text-white shadow-xl ring-2 ring-amber-500/20";
+                        ? "bg-blue-600 border-blue-400 text-white shadow-xl ring-2 ring-blue-500/20 hover:bg-blue-700 hover:text-white hover:border-blue-500"
+                        : "bg-amber-500 border-amber-300 text-white shadow-xl ring-2 ring-amber-500/20 hover:bg-amber-600 hover:text-white hover:border-amber-400";
 
                     const unselectedStyle = isNightMode
                         ? "bg-black/40 border-white/5 text-slate-300 hover:bg-white/5 hover:border-white/10 hover:text-white"
                         : "bg-white border-slate-200 text-slate-500 hover:bg-slate-50 hover:border-slate-300";
 
                     return (
-                        <div key={player.id || player.number} className="flex gap-1.5 sm:gap-2">
+                        <div key={player.id || player.number} className="flex items-stretch gap-1.5 sm:gap-2">
                             <Button
                                 variant="outline"
-                                className={`flex-1 min-h-[44px] sm:min-h-[55px] flex items-center justify-start px-2.5 sm:px-4 rounded-xl border relative transition-all duration-200 active:scale-95 shadow-md overflow-hidden ${isSelected ? selectedStyle : unselectedStyle} ${isActiveGK && !isSelected ? "ring-2 ring-green-500/30" : ""}`}
+                                className={`flex-1 min-h-[44px] sm:min-h-[55px] h-full flex items-center justify-start px-2.5 sm:px-4 rounded-xl border relative transition-all duration-200 active:scale-95 shadow-md overflow-hidden ${isSelected ? selectedStyle : unselectedStyle} ${isActiveGK && !isSelected ? "ring-2 ring-green-500/30" : ""}`}
                                 onClick={() => handlePlayerSelect(team, player.number)}
                             >
                                 <span className={`text-lg sm:text-2xl font-black leading-none italic shrink-0 w-7 sm:w-10 text-left ${isSelected ? "text-white" : (isTeamA ? "text-blue-500/40" : "text-amber-500/40")}`}>
                                     {player.number}
                                 </span>
                                 <div className="flex flex-col ml-2 sm:ml-3 flex-1 min-w-0">
-                                    <span className={`text-[11px] sm:text-sm font-black uppercase tracking-tight truncate ${isSelected ? "text-white" : (isNightMode ? "text-slate-200" : "text-slate-800")}`}>
+                                    <span className={`text-[10px] xs:text-[11px] sm:text-sm font-black uppercase tracking-tighter sm:tracking-tight break-words line-clamp-2 leading-[1.1] ${isSelected ? "text-white" : (isNightMode ? "text-slate-200" : "text-slate-800")}`}>
                                         {player.name || `P#${player.number}`}
                                     </span>
                                 </div>
@@ -76,7 +76,7 @@ export function PlayerGrid({
                                     size="icon"
                                     variant="ghost"
                                     onClick={() => setActiveGoalkeeper(isActiveGK ? null : player.number)}
-                                    className={`shrink-0 w-9 sm:w-12 h-auto rounded-xl border transition-all ${isActiveGK
+                                    className={`shrink-0 w-9 sm:w-12 h-full rounded-xl border transition-all ${isActiveGK
                                         ? "bg-green-500 border-green-400 text-white shadow-lg"
                                         : (isNightMode ? "bg-black/40 border-white/5 text-slate-600" : "bg-white border-slate-200 text-slate-300")
                                         }`}
