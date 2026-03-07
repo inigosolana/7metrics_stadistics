@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { MatchSetup } from "@/components/match-setup"
 import { HeaderScoreboard } from "@/components/header-scoreboard"
 import { PlayerGrid } from "@/components/player-grid"
-import { PorteriaAdvanced, PorteriaLocalSaves } from "@/components/porteria-advanced"
+import { GoalAdvanced } from "@/components/goal-advanced"
 import { LiveFeedPanel } from "@/components/live-feed-panel"
 import { StatsTable } from "@/components/stats-table"
 import { ActionWizard, WizardState } from "@/components/action-wizard"
@@ -12,7 +12,7 @@ import { useMatch } from "@/lib/hooks/useMatch"
 import { usePlayers } from "@/lib/hooks/usePlayers"
 import { useCreateEvent, useUndoLastEvent, useEventsByMatch } from "@/lib/hooks/useEvents"
 import { statisticsApi } from "@/lib/api/statistics"
-import { DefenseType, CourtZone, CreateEventRequest } from "@/lib/types/api-types"
+import { DefenseType, CourtZone, CreateEventRequest, Player } from "@/lib/types/api-types"
 
 export default function MatchView() {
 
@@ -20,6 +20,7 @@ export default function MatchView() {
   const [matchId, setMatchId] = useState<string | null>(null)
   const [time, setTime] = useState(0)
   const [isRunning, setIsRunning] = useState(false)
+  const [isNightMode, setIsNightMode] = useState(false)
 
   // Persistencia básica de Match ID y tiempo
   useEffect(() => {
@@ -91,19 +92,31 @@ export default function MatchView() {
     return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`
   }
 
-  const getActivePlayerInfo = (): { team: "A" | "B"; player: number; isGK?: boolean } | null => {
+  const getActivePlayerInfo = (): { team: "A" | "B"; player: number; isGK?: boolean; name?: string } | null => {
     if (selectedPlayerA !== null) {
       const p = playersA?.find(p => p.number === selectedPlayerA)
-      return { team: "A", player: selectedPlayerA, isGK: p?.is_goalkeeper }
+      return { team: "A", player: selectedPlayerA, isGK: p?.is_goalkeeper, name: p?.name }
     }
     if (selectedPlayerB !== null) {
       const p = playersB?.find(p => p.number === selectedPlayerB)
-      return { team: "B", player: selectedPlayerB, isGK: p?.is_goalkeeper }
+      return { team: "B", player: selectedPlayerB, isGK: p?.is_goalkeeper, name: p?.name }
     }
     return null
   }
 
   const activeInfo = getActivePlayerInfo()
+
+  let rivalGoalkeepersList: Player[] = []
+  let activeRivalGk: number | null = null
+  if (activeInfo) {
+    if (activeInfo.team === "A") {
+      rivalGoalkeepersList = playersB?.filter(p => p.is_goalkeeper) || []
+      activeRivalGk = activeGoalkeeperB
+    } else {
+      rivalGoalkeepersList = playersA?.filter(p => p.is_goalkeeper) || []
+      activeRivalGk = activeGoalkeeperA
+    }
+  }
 
   // --- HANDLERS ---
   const handleMatchStarted = (id: string, initialPossession: string) => {
@@ -220,13 +233,13 @@ export default function MatchView() {
     if (!matchId) return;
     try {
       const blob = await statisticsApi.exportCsv(matchId);
-      const url = window.URL.createObjectURL(blob);
+      const url = globalThis.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
       link.setAttribute("download", `estadisticas_partido_${matchId}.csv`);
       document.body.appendChild(link);
       link.click();
-      link.parentNode?.removeChild(link);
+      link.remove();
     } catch (error) {
       console.error("Error exporting CSV:", error);
       alert("Error al exportar el CSV. Asegúrate de que el servidor esté disponible.");
@@ -244,7 +257,7 @@ export default function MatchView() {
   }
 
   return (
-    <div className="flex flex-col h-screen w-full bg-slate-950 text-slate-100 overflow-hidden font-sans selection:bg-blue-500/30">
+    <div className={`flex flex-col h-screen w-full overflow-hidden font-sans selection:bg-blue-500/30 transition-all duration-700 ${isNightMode ? 'bg-[#000000] text-slate-100' : 'bg-[#f8fafc] text-slate-900'}`}>
 
       {/* HEADER */}
       <HeaderScoreboard
@@ -254,6 +267,8 @@ export default function MatchView() {
         teamBName={match?.team_b_name || "Visitante"}
         time={time}
         isRunning={isRunning}
+        isNightMode={isNightMode}
+        onToggleTheme={() => setIsNightMode(!isNightMode)}
         setIsRunning={setIsRunning}
         onExport={handleExport}
         onReset={handleResetMatch}
@@ -261,11 +276,11 @@ export default function MatchView() {
       />
 
       {/* MAIN LAYOUT */}
-      <div className="flex-1 overflow-hidden p-2 sm:p-3 grid grid-cols-12 gap-2 sm:gap-3 min-h-0">
+      <div className="flex-1 overflow-y-auto lg:overflow-hidden p-2 sm:p-3 grid grid-cols-1 lg:grid-cols-12 gap-2 sm:gap-3 min-h-0">
 
         {/* COLUMN 1: Player Grids (Left) */}
-        <div className="col-span-3 lg:col-span-2 xl:col-span-2 flex flex-col gap-2 min-h-0">
-          <div className="flex-1 min-h-0 overflow-hidden">
+        <div className="order-2 lg:order-1 col-span-1 lg:col-span-3 xl:col-span-2 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-2 min-h-[360px] lg:min-h-0">
+          <div className="min-h-[200px] lg:flex-1 lg:min-h-0 overflow-hidden">
             <PlayerGrid
               team="A"
               teamName={match?.team_a_name || "Local"}
@@ -275,9 +290,10 @@ export default function MatchView() {
               handlePlayerSelect={handlePlayerSelect}
               activeGoalkeeper={activeGoalkeeperA}
               setActiveGoalkeeper={setActiveGoalkeeperA}
+              isNightMode={isNightMode}
             />
           </div>
-          <div className="flex-1 min-h-0 overflow-hidden">
+          <div className="min-h-[200px] lg:flex-1 lg:min-h-0 overflow-hidden">
             <PlayerGrid
               team="B"
               teamName={match?.team_b_name || "Visitante"}
@@ -287,29 +303,28 @@ export default function MatchView() {
               handlePlayerSelect={handlePlayerSelect}
               activeGoalkeeper={activeGoalkeeperB}
               setActiveGoalkeeper={setActiveGoalkeeperB}
+              isNightMode={isNightMode}
             />
           </div>
         </div>
 
         {/* COLUMN 2: Court / Wizard / Stats (Center) */}
-        <div className="col-span-6 lg:col-span-7 xl:col-span-7 flex flex-col gap-2 min-h-0">
+        <div className="order-1 lg:order-2 col-span-1 lg:col-span-6 xl:col-span-7 flex flex-col gap-2 min-h-[520px] lg:min-h-0">
           {/* Top Area: Stats & Visualization */}
-          <div className="flex-[3] grid grid-cols-12 gap-3 min-h-0">
-            <div className="col-span-7 h-full min-h-0 overflow-hidden">
+          <div className="flex-[3] grid grid-cols-1 md:grid-cols-12 gap-2 sm:gap-3 min-h-0">
+            <div className="col-span-1 md:col-span-7 h-full min-h-[220px] md:min-h-0 overflow-hidden">
               <StatsTable
                 events={events}
                 teamAName={match?.team_a_name || "A"}
                 teamBName={match?.team_b_name || "B"}
                 teamAPlayers={playersA || []}
                 teamBPlayers={playersB || []}
+                isNightMode={isNightMode}
               />
             </div>
-            <div className="col-span-5 flex flex-col gap-2 h-full min-h-0">
-              <div className="flex-1 min-h-0">
-                <PorteriaAdvanced events={events} />
-              </div>
-              <div className="h-1/3 min-h-0">
-                <PorteriaLocalSaves events={events} />
+            <div className="col-span-1 md:col-span-5 flex flex-col gap-2 h-full min-h-[220px] md:min-h-0">
+              <div className="flex-1 min-h-0 overflow-hidden">
+                <GoalAdvanced events={events} isNightMode={isNightMode} />
               </div>
             </div>
           </div>
@@ -320,7 +335,14 @@ export default function MatchView() {
               wizardState={wizardState}
               activePlayer={activeInfo}
               isGoalkeeper={activeInfo?.isGK || false}
-              handleBack={() => setWizardState("IDLE")}
+              handleBack={() => {
+                if (wizardState === "DETAILS") {
+                  setWizardState("ACTION_SELECTION")
+                  resetSelectionState()
+                } else {
+                  setWizardState("IDLE")
+                }
+              }}
               currentAction={currentAction}
               handleActionSelect={handleActionSelect}
               selectedContext={selectedContext}
@@ -339,24 +361,26 @@ export default function MatchView() {
               setSelectedTurnoverType={setSelectedTurnoverType}
               selectedRecoveryType={selectedRecoveryType}
               setSelectedRecoveryType={setSelectedRecoveryType}
-              rivalGoalkeepers={activeInfo ? (activeInfo.team === "A" ? (playersB?.filter(p => p.is_goalkeeper) || []) : (playersA?.filter(p => p.is_goalkeeper) || [])) : []}
+              rivalGoalkeepers={rivalGoalkeepersList}
               selectedGoalkeeper={selectedGoalkeeper}
               setSelectedGoalkeeper={setSelectedGoalkeeper}
-              activeRivalGoalkeeper={activeInfo?.team === "A" ? activeGoalkeeperB : activeGoalkeeperA}
+              activeRivalGoalkeeper={activeRivalGk}
               onSetActiveRivalGK={(n) => {
                 if (activeInfo?.team === "A") setActiveGoalkeeperB(n)
                 else setActiveGoalkeeperA(n)
               }}
+              isNightMode={isNightMode}
             />
           </div>
         </div>
 
         {/* COLUMN 3: Live Feed (Right) */}
-        <div className="col-span-3 lg:col-span-3 xl:col-span-3 min-h-0">
+        <div className="order-3 col-span-1 lg:col-span-3 xl:col-span-3 min-h-[220px] lg:min-h-0">
           <LiveFeedPanel
             events={events}
             onUndo={handleUndo}
             onExport={handleExport}
+            isNightMode={isNightMode}
           />
         </div>
 

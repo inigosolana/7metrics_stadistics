@@ -137,9 +137,15 @@ const SetupTeamColumn = ({ team, name, setName, defense, setDefense, players, se
                                     <div className="grid grid-cols-4 items-center gap-4">
                                         <Label className="text-right">Número</Label>
                                         <Input
-                                            type="number"
-                                            value={editData.number}
-                                            onChange={(e) => setEditData({ ...editData, number: Number.parseInt(e.target.value) || 0 })}
+                                            type="text"
+                                            inputMode="numeric"
+                                            value={editData.number.toString()}
+                                            onChange={(e) => {
+                                                const val = e.target.value;
+                                                if (val === "" || /^\d+$/.test(val)) {
+                                                    setEditData({ ...editData, number: val === "" ? 0 : Number.parseInt(val, 10) })
+                                                }
+                                            }}
                                             className="col-span-3 bg-slate-900 border-slate-800"
                                         />
                                     </div>
@@ -157,47 +163,56 @@ const SetupTeamColumn = ({ team, name, setName, defense, setDefense, players, se
                                             <Switch
                                                 id="gk-mode"
                                                 checked={editData.isGoalkeeper}
-                                                onCheckedChange={(c) => setEditData({ ...editData, isGoalkeeper: c })}
+                                                onCheckedChange={(c) => setEditData({
+                                                    ...editData,
+                                                    isGoalkeeper: c,
+                                                    position: c ? "Portero" as Position : (editData.position === "Portero" ? undefined : editData.position),
+                                                    hand: c ? undefined : editData.hand
+                                                })}
                                             />
                                             <Label htmlFor="gk-mode">{editData.isGoalkeeper ? "Sí" : "No"}</Label>
                                         </div>
                                     </div>
-                                    <div className="grid grid-cols-4 items-center gap-4">
-                                        <Label className="text-right">Posición</Label>
-                                        <Select
-                                            value={editData.position || ""}
-                                            onValueChange={(val) => setEditData({ ...editData, position: val as any })}
-                                        >
-                                            <SelectTrigger className="col-span-3 bg-slate-900 border-slate-800">
-                                                <SelectValue placeholder="Seleccionar" />
-                                            </SelectTrigger>
-                                            <SelectContent className="bg-slate-900 border-slate-800">
-                                                {POSITIONS.map((pos) => (
-                                                    <SelectItem key={pos} value={pos} className="text-slate-200">
-                                                        {pos}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                    <div className="grid grid-cols-4 items-center gap-4">
-                                        <Label className="text-right">Mano</Label>
-                                        <Select
-                                            value={editData.hand || ""}
-                                            onValueChange={(val) => setEditData({ ...editData, hand: val as any })}
-                                        >
-                                            <SelectTrigger className="col-span-3 bg-slate-900 border-slate-800">
-                                                <SelectValue placeholder="Seleccionar" />
-                                            </SelectTrigger>
-                                            <SelectContent className="bg-slate-900 border-slate-800">
-                                                {HANDS.map((hand) => (
-                                                    <SelectItem key={hand} value={hand} className="text-slate-200">
-                                                        {hand}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
+                                    {!editData.isGoalkeeper && (
+                                        <>
+                                            <div className="grid grid-cols-4 items-center gap-4">
+                                                <Label className="text-right">Posición</Label>
+                                                <Select
+                                                    value={editData.position || ""}
+                                                    onValueChange={(val) => setEditData({ ...editData, position: val as any })}
+                                                >
+                                                    <SelectTrigger className="col-span-3 bg-slate-900 border-slate-800">
+                                                        <SelectValue placeholder="Seleccionar" />
+                                                    </SelectTrigger>
+                                                    <SelectContent className="bg-slate-900 border-slate-800">
+                                                        {POSITIONS.filter(pos => pos !== "Portero").map((pos) => (
+                                                            <SelectItem key={pos} value={pos} className="text-slate-200">
+                                                                {pos}
+                                                            </SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                            <div className="grid grid-cols-4 items-center gap-4">
+                                                <Label className="text-right">Mano</Label>
+                                                <Select
+                                                    value={editData.hand || ""}
+                                                    onValueChange={(val) => setEditData({ ...editData, hand: val as any })}
+                                                >
+                                                    <SelectTrigger className="col-span-3 bg-slate-900 border-slate-800">
+                                                        <SelectValue placeholder="Seleccionar" />
+                                                    </SelectTrigger>
+                                                    <SelectContent className="bg-slate-900 border-slate-800">
+                                                        {HANDS.map((hand) => (
+                                                            <SelectItem key={hand} value={hand} className="text-slate-200">
+                                                                {hand}
+                                                            </SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                        </>
+                                    )}
                                 </div>
                                 <DialogFooter>
                                     <Button onClick={saveEdit} className="bg-green-600 hover:bg-green-500">
@@ -235,7 +250,7 @@ export function MatchSetup({ onMatchStarted }: { onMatchStarted: (id: string, in
             number: i + 1,
             name: `Jugador A${i + 1}`,
             isGoalkeeper: i === 0 || i === 12,
-            position: undefined,
+            position: (i === 0 || i === 12) ? "Portero" as Position : undefined,
             hand: undefined,
         })),
     )
@@ -244,7 +259,7 @@ export function MatchSetup({ onMatchStarted }: { onMatchStarted: (id: string, in
             number: i + 1,
             name: `Jugador B${i + 1}`,
             isGoalkeeper: i === 0 || i === 12,
-            position: undefined,
+            position: (i === 0 || i === 12) ? "Portero" as Position : undefined,
             hand: undefined,
         })),
     )
@@ -322,11 +337,11 @@ export function MatchSetup({ onMatchStarted }: { onMatchStarted: (id: string, in
     }
 
     return (
-        <div className="min-h-screen bg-slate-950 text-white p-6 flex flex-col">
-            <h1 className="text-2xl font-bold mb-6 text-center uppercase tracking-widest flex items-center justify-center gap-2">
+        <div className="min-h-screen bg-slate-950 text-white p-3 sm:p-6 flex flex-col">
+            <h1 className="text-lg sm:text-2xl font-bold mb-4 sm:mb-6 text-center uppercase tracking-wider sm:tracking-widest flex items-center justify-center gap-2">
                 <Settings className="w-6 h-6" /> Configuración de Partido
             </h1>
-            <div className="flex-1 flex gap-6 min-h-0 flex-col lg:flex-row">
+            <div className="flex-1 flex gap-3 sm:gap-6 min-h-0 flex-col lg:flex-row">
                 <SetupTeamColumn
                     team="A"
                     name={teamAName}
@@ -349,12 +364,12 @@ export function MatchSetup({ onMatchStarted }: { onMatchStarted: (id: string, in
                 />
             </div>
 
-            <div className="mt-6 bg-slate-900 p-6 rounded-xl border border-slate-800">
-                <h2 className="text-lg font-bold mb-4 uppercase tracking-widest flex items-center gap-2">
+            <div className="mt-4 sm:mt-6 bg-slate-900 p-4 sm:p-6 rounded-xl border border-slate-800">
+                <h2 className="text-sm sm:text-lg font-bold mb-3 sm:mb-4 uppercase tracking-wider sm:tracking-widest flex items-center gap-2">
                     <Trophy className="w-5 h-5" /> Sorteo Inicial - Primera Posesión
                 </h2>
                 <RadioGroup value={initialPossession || ""} onValueChange={(val) => setInitialPossession(val as "A" | "B")}>
-                    <div className="flex gap-4 items-center justify-center">
+                    <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-start sm:items-center justify-center">
                         <div className="flex items-center space-x-2">
                             <RadioGroupItem value="A" id="possession-a" />
                             <Label htmlFor="possession-a" className="text-base font-semibold cursor-pointer text-blue-400">
@@ -375,7 +390,7 @@ export function MatchSetup({ onMatchStarted }: { onMatchStarted: (id: string, in
                 size="lg"
                 onClick={handleStart}
                 disabled={!initialPossession || isSubmitting}
-                className="mt-6 w-full bg-green-600 hover:bg-green-500 disabled:opacity-50 font-black tracking-widest text-xl py-6 shadow-[0_0_20px_rgba(34,197,94,0.3)]"
+                className="mt-4 sm:mt-6 w-full bg-green-600 hover:bg-green-500 disabled:opacity-50 font-black tracking-wider sm:tracking-widest text-sm sm:text-xl py-3 sm:py-6 shadow-[0_0_20px_rgba(34,197,94,0.3)]"
             >
                 {isSubmitting ? "CREANDO..." : "COMENZAR PARTIDO"}
             </Button>
