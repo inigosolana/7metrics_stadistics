@@ -90,7 +90,7 @@ export function ActionWizard({
     }
 
     return (
-        <div className={`${glassBg} backdrop-blur-2xl border rounded-2xl p-3 sm:p-4 h-full flex flex-col relative overflow-hidden shadow-2xl transition-all duration-500 min-h-0`}>
+        <div className={`p-3 sm:p-4 flex flex-col relative transition-all duration-500 min-h-0`}>
             {/* Header */}
             <div className={`flex justify-between items-center mb-3 pb-2 border-b shrink-0 min-h-[40px] ${isNightMode ? 'border-white/10' : 'border-slate-200'}`}>
                 <Button variant="ghost" onClick={handleBack} className={`${isNightMode ? 'hover:bg-white/5 text-slate-400' : 'hover:bg-slate-100 text-slate-500'} p-2 -ml-2 rounded-xl`}>

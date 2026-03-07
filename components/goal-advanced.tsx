@@ -47,7 +47,7 @@ export const GoalAdvanced = ({ events, isNightMode = false }: GoalProps) => {
     }
 
     return (
-        <div className={`w-full h-full flex flex-col rounded-2xl border transition-colors duration-500 overflow-hidden shadow-xl ${isNightMode ? 'bg-slate-950/90 border-white/5' : 'bg-white/80 border-slate-200'}`}>
+        <div className={`w-full h-full min-h-0 flex flex-col rounded-2xl border transition-colors duration-500 overflow-hidden shadow-xl ${isNightMode ? 'bg-slate-950/90 border-white/5' : 'bg-white/80 border-slate-200'}`}>
             <div className={`flex p-1 border-b gap-1 shrink-0 ${isNightMode ? 'bg-black/40 border-white/5' : 'bg-slate-100/50 border-slate-200'}`}>
                 {(["ALL", "WING", "7M"] as const).map((f) => (
                     <Button
@@ -67,14 +67,14 @@ export const GoalAdvanced = ({ events, isNightMode = false }: GoalProps) => {
             <div className={`flex-1 p-2 sm:p-4 flex items-center justify-center min-h-0 relative overflow-hidden ${isNightMode ? 'bg-[#000000]/20' : 'bg-slate-50/30'}`}>
                 <div className={`absolute bottom-0 w-[80%] h-6 blur-2xl rounded-full ${isNightMode ? 'bg-blue-900/20' : 'bg-blue-500/10'}`}></div>
 
-                <div className="relative aspect-[3/2] w-full h-full max-h-[170px] sm:max-h-[220px] max-w-[450px] flex flex-col pt-[8px] sm:pt-[12px] px-[8px] sm:px-[12px] bg-[repeating-linear-gradient(45deg,#dc2626_0,#dc2626_20px,#f8fafc_20px,#f8fafc_40px)] rounded-t-xl shadow-2xl border-t border-x border-white/20">
+                <div className="relative aspect-[3/2] h-full w-auto max-h-full max-w-full min-h-0 flex flex-col pt-[8px] sm:pt-[12px] px-[8px] sm:px-[12px] bg-[repeating-linear-gradient(45deg,#dc2626_0,#dc2626_20px,#f8fafc_20px,#f8fafc_40px)] rounded-t-xl shadow-2xl border-t border-x border-white/20">
                         <div
                         className={`flex-1 w-full rounded-t-lg relative overflow-hidden shadow-[inset_0_10px_40px_rgba(0,0,0,0.5)] ${isNightMode ? 'bg-slate-900' : 'bg-slate-800'}`}
                         style={{
                             backgroundImage: "repeating-linear-gradient(0deg, transparent, transparent 19px, rgba(255,255,255,0.05) 19px, rgba(255,255,255,0.08) 20px), repeating-linear-gradient(90deg, transparent, transparent 19px, rgba(255,255,255,0.05) 19px, rgba(255,255,255,0.08) 20px)"
                         }}
                     >
-                        <div className="absolute inset-0 grid grid-cols-3 grid-rows-3 gap-1 p-1 sm:gap-1.5 sm:p-1.5">
+                        <div className="absolute inset-0 grid grid-cols-3 grid-rows-3 gap-1 p-1 sm:gap-1.5 sm:p-1.5 min-w-0 min-h-0">
                             {GOAL_ZONES.map((z, index) => {
                                 const zoneEvents = relevantShots.filter((s: Event) => s.goal_zone === z)
                                 const goals = zoneEvents.filter(e => e.action.startsWith("GOL")).length
@@ -83,7 +83,7 @@ export const GoalAdvanced = ({ events, isNightMode = false }: GoalProps) => {
                                 return (
                                     <div
                                         key={z}
-                                        className={`relative rounded-lg flex flex-col items-center justify-center transition-all duration-300 backdrop-blur-[2px] border ${isNightMode ? 'border-white/5 hover:border-white/20' : 'border-white/10 hover:border-white/30'}`}
+                                        className={`relative rounded-lg flex flex-col items-center justify-center min-w-0 min-h-0 overflow-hidden transition-all duration-300 backdrop-blur-[2px] border ${isNightMode ? 'border-white/5 hover:border-white/20' : 'border-white/10 hover:border-white/30'}`}
                                         style={{ backgroundColor: getHeatmapColor(index) }}
                                     >
                                         <span className={`absolute top-1 left-1 text-[8px] sm:text-[9px] font-black pointer-events-none drop-shadow-md ${isNightMode ? 'text-white/20' : 'text-white/40'}`}>{z}</span>

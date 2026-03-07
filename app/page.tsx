@@ -8,6 +8,7 @@ import { GoalAdvanced } from "@/components/goal-advanced"
 import { LiveFeedPanel } from "@/components/live-feed-panel"
 import { StatsTable } from "@/components/stats-table"
 import { ActionWizard, WizardState } from "@/components/action-wizard"
+import { Sheet, SheetContent } from "@/components/ui/sheet"
 import { useMatch } from "@/lib/hooks/useMatch"
 import { usePlayers } from "@/lib/hooks/usePlayers"
 import { useCreateEvent, useUndoLastEvent, useEventsByMatch, useDeleteEvent, useUpdateEvent } from "@/lib/hooks/useEvents"
@@ -327,10 +328,10 @@ export default function MatchView() {
         </div>
 
         {/* COLUMN 2: Court / Wizard / Stats (Center) */}
-        <div className="order-1 lg:order-2 col-span-1 lg:col-span-6 xl:col-span-7 flex flex-col gap-2 min-h-0">
+        <div className="order-1 lg:order-2 col-span-1 lg:col-span-7 xl:col-span-8 flex flex-col gap-2 min-h-0">
           {/* Top Area: Stats & Visualization */}
-          <div className="flex-grow-0 flex flex-col md:flex-row gap-2 sm:gap-3 items-start">
-            <div className="w-full md:w-[58%] shrink-0">
+          <div className="flex-grow-0 flex flex-col md:flex-row gap-2 sm:gap-3 items-stretch min-h-0">
+            <div className="w-full md:w-[58%] shrink-0 min-h-0 flex flex-col">
               <StatsTable
                 events={events}
                 teamAName={match?.team_a_name || "A"}
@@ -340,58 +341,95 @@ export default function MatchView() {
                 isNightMode={isNightMode}
               />
             </div>
-            <div className="w-full md:flex-1 min-w-0">
+            <div className="w-full md:flex-1 min-w-0 min-h-0 flex flex-col">
               <GoalAdvanced events={events} isNightMode={isNightMode} />
             </div>
           </div>
 
-          {/* Bottom Area: Action Wizard */}
+          {/* Bottom Area: idle placeholder */}
           <div className="flex-[2] min-h-0">
             <ActionWizard
-              wizardState={wizardState}
-              activePlayer={activeInfo}
-              isGoalkeeper={activeInfo?.isGK || false}
-              handleBack={() => {
-                if (wizardState === "DETAILS") {
-                  setWizardState("ACTION_SELECTION")
-                  resetSelectionState()
-                } else {
-                  setWizardState("IDLE")
-                }
-              }}
-              currentAction={currentAction}
-              handleActionSelect={handleActionSelect}
-              selectedContext={selectedContext}
-              toggleContext={(ctx) => {
-                if (selectedContext.includes(ctx)) setSelectedContext(selectedContext.filter(c => c !== ctx))
-                else setSelectedContext([...selectedContext, ctx])
-              }}
-              confirmEvent={() => handleConfirmEvent()}
-              selectedCourtZone={selectedCourtZone}
-              setSelectedCourtZone={setSelectedCourtZone}
-              selectedGoalZone={selectedGoalZone}
-              setSelectedGoalZone={setSelectedGoalZone}
-              selectedDefense={selectedDefense}
-              setSelectedDefense={setSelectedDefense}
-              selectedTurnoverType={selectedTurnoverType}
-              setSelectedTurnoverType={setSelectedTurnoverType}
-              selectedRecoveryType={selectedRecoveryType}
-              setSelectedRecoveryType={setSelectedRecoveryType}
-              rivalGoalkeepers={rivalGoalkeepersList}
-              selectedGoalkeeper={selectedGoalkeeper}
-              setSelectedGoalkeeper={setSelectedGoalkeeper}
-              activeRivalGoalkeeper={activeRivalGk}
-              onSetActiveRivalGK={(n) => {
-                if (activeInfo?.team === "A") setActiveGoalkeeperB(n)
-                else setActiveGoalkeeperA(n)
-              }}
+              wizardState="IDLE"
+              activePlayer={null}
+              isGoalkeeper={false}
+              handleBack={() => {}}
+              currentAction={null}
+              handleActionSelect={() => {}}
+              selectedContext={[]}
+              toggleContext={() => {}}
+              confirmEvent={() => {}}
+              selectedCourtZone={null}
+              setSelectedCourtZone={() => {}}
+              selectedGoalZone={null}
+              setSelectedGoalZone={() => {}}
+              selectedDefense={null}
+              setSelectedDefense={() => {}}
+              selectedTurnoverType={null}
+              setSelectedTurnoverType={() => {}}
+              selectedRecoveryType={null}
+              setSelectedRecoveryType={() => {}}
+              rivalGoalkeepers={[]}
+              selectedGoalkeeper={null}
+              setSelectedGoalkeeper={() => {}}
+              activeRivalGoalkeeper={null}
+              onSetActiveRivalGK={() => {}}
               isNightMode={isNightMode}
             />
           </div>
+
+          {/* Action Sheet — se abre al seleccionar jugador */}
+          <Sheet open={wizardState !== "IDLE"} onOpenChange={(open) => { if (!open) resetUI() }}>
+            <SheetContent
+              side="bottom"
+              showCloseButton={false}
+              className={`rounded-t-2xl p-0 border-t max-h-[85dvh] flex flex-col ${isNightMode ? "bg-slate-950 border-white/10" : "bg-white border-slate-200"}`}
+            >
+              <ActionWizard
+                wizardState={wizardState}
+                activePlayer={activeInfo}
+                isGoalkeeper={activeInfo?.isGK || false}
+                handleBack={() => {
+                  if (wizardState === "DETAILS") {
+                    setWizardState("ACTION_SELECTION")
+                    resetSelectionState()
+                  } else {
+                    resetUI()
+                  }
+                }}
+                currentAction={currentAction}
+                handleActionSelect={handleActionSelect}
+                selectedContext={selectedContext}
+                toggleContext={(ctx) => {
+                  if (selectedContext.includes(ctx)) setSelectedContext(selectedContext.filter(c => c !== ctx))
+                  else setSelectedContext([...selectedContext, ctx])
+                }}
+                confirmEvent={() => handleConfirmEvent()}
+                selectedCourtZone={selectedCourtZone}
+                setSelectedCourtZone={setSelectedCourtZone}
+                selectedGoalZone={selectedGoalZone}
+                setSelectedGoalZone={setSelectedGoalZone}
+                selectedDefense={selectedDefense}
+                setSelectedDefense={setSelectedDefense}
+                selectedTurnoverType={selectedTurnoverType}
+                setSelectedTurnoverType={setSelectedTurnoverType}
+                selectedRecoveryType={selectedRecoveryType}
+                setSelectedRecoveryType={setSelectedRecoveryType}
+                rivalGoalkeepers={rivalGoalkeepersList}
+                selectedGoalkeeper={selectedGoalkeeper}
+                setSelectedGoalkeeper={setSelectedGoalkeeper}
+                activeRivalGoalkeeper={activeRivalGk}
+                onSetActiveRivalGK={(n) => {
+                  if (activeInfo?.team === "A") setActiveGoalkeeperB(n)
+                  else setActiveGoalkeeperA(n)
+                }}
+                isNightMode={isNightMode}
+              />
+            </SheetContent>
+          </Sheet>
         </div>
 
-        {/* COLUMN 3: Live Feed (Right) */}
-        <div className="order-3 col-span-1 lg:col-span-3 xl:col-span-3 min-h-[220px] lg:min-h-0">
+        {/* COLUMN 3: Registro en vivo (Right) */}
+        <div className="order-3 col-span-1 lg:col-span-2 xl:col-span-2 h-[320px] sm:h-[360px] lg:h-auto lg:min-h-0 min-w-0 overflow-hidden">
           <LiveFeedPanel
             events={events}
             onUndo={handleUndo}
