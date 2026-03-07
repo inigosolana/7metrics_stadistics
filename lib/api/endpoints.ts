@@ -17,6 +17,8 @@ export const ENDPOINTS = {
     EVENT_CREATE: '/events/',
     EVENT_LIST: (matchId: string) => `/events/${matchId}`,
     EVENT_UNDO_LAST: (matchId: string) => `/events/last/${matchId}`,
+    EVENT_DELETE: (eventId: string) => `/events/${eventId}`,
+    EVENT_UPDATE: (eventId: string) => `/events/${eventId}`,
 
     // Statistics
     STATS_FULL: (matchId: string) => `/matches/${matchId}/statistics/`,

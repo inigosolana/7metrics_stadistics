@@ -10,9 +10,10 @@ import { StatsTable } from "@/components/stats-table"
 import { ActionWizard, WizardState } from "@/components/action-wizard"
 import { useMatch } from "@/lib/hooks/useMatch"
 import { usePlayers } from "@/lib/hooks/usePlayers"
-import { useCreateEvent, useUndoLastEvent, useEventsByMatch } from "@/lib/hooks/useEvents"
+import { useCreateEvent, useUndoLastEvent, useEventsByMatch, useDeleteEvent, useUpdateEvent } from "@/lib/hooks/useEvents"
 import { statisticsApi } from "@/lib/api/statistics"
-import { DefenseType, CourtZone, CreateEventRequest, Player } from "@/lib/types/api-types"
+import { DefenseType, CourtZone, CreateEventRequest, UpdateEventRequest, Player, Event } from "@/lib/types/api-types"
+import { EventEditDialog } from "@/components/event-edit-dialog"
 
 export default function MatchView() {
 
@@ -60,6 +61,11 @@ export default function MatchView() {
 
   const createEvent = useCreateEvent(matchId!)
   const undoLastEvent = useUndoLastEvent(matchId!)
+  const deleteEvent = useDeleteEvent(matchId!)
+  const updateEvent = useUpdateEvent(matchId!)
+
+  // Edit dialog state
+  const [editingEvent, setEditingEvent] = useState<Event | null>(null)
 
   // Wizard & Selection State
   const [selectedPlayerA, setSelectedPlayerA] = useState<number | null>(null)
@@ -217,6 +223,16 @@ export default function MatchView() {
     })
   }
 
+  const handleDeleteEvent = (eventId: string) => {
+    deleteEvent.mutate(eventId)
+  }
+
+  const handleSaveEditEvent = (eventId: string, data: UpdateEventRequest) => {
+    updateEvent.mutate({ eventId, data }, {
+      onSuccess: () => setEditingEvent(null),
+    })
+  }
+
   const handleResetMatch = () => {
     localStorage.removeItem("currentMatchId")
     if (matchId) {
@@ -311,10 +327,10 @@ export default function MatchView() {
         </div>
 
         {/* COLUMN 2: Court / Wizard / Stats (Center) */}
-        <div className="order-1 lg:order-2 col-span-1 lg:col-span-6 xl:col-span-7 flex flex-col gap-2 min-h-[520px] lg:min-h-0">
+        <div className="order-1 lg:order-2 col-span-1 lg:col-span-6 xl:col-span-7 flex flex-col gap-2 min-h-0">
           {/* Top Area: Stats & Visualization */}
-          <div className="flex-[3] grid grid-cols-1 md:grid-cols-12 gap-2 sm:gap-3 min-h-0">
-            <div className="col-span-1 md:col-span-7 h-full min-h-[220px] md:min-h-0 overflow-hidden">
+          <div className="flex-grow-0 flex flex-col md:flex-row gap-2 sm:gap-3 items-start">
+            <div className="w-full md:w-[58%] shrink-0">
               <StatsTable
                 events={events}
                 teamAName={match?.team_a_name || "A"}
@@ -324,10 +340,8 @@ export default function MatchView() {
                 isNightMode={isNightMode}
               />
             </div>
-            <div className="col-span-1 md:col-span-5 flex flex-col gap-2 h-full min-h-[220px] md:min-h-0">
-              <div className="flex-1 min-h-0 overflow-hidden">
-                <GoalAdvanced events={events} isNightMode={isNightMode} />
-              </div>
+            <div className="w-full md:flex-1 min-w-0">
+              <GoalAdvanced events={events} isNightMode={isNightMode} />
             </div>
           </div>
 
@@ -383,10 +397,23 @@ export default function MatchView() {
             onUndo={handleUndo}
             onExport={handleExport}
             isNightMode={isNightMode}
+            onDeleteEvent={handleDeleteEvent}
+            onEditEvent={(event) => setEditingEvent(event)}
+            isDeletingEvent={deleteEvent.isPending}
           />
         </div>
 
       </div>
+
+      {/* Event Edit Dialog */}
+      <EventEditDialog
+        event={editingEvent}
+        open={editingEvent !== null}
+        onClose={() => setEditingEvent(null)}
+        onSave={handleSaveEditEvent}
+        isSaving={updateEvent.isPending}
+        isNightMode={isNightMode}
+      />
     </div>
   )
 }

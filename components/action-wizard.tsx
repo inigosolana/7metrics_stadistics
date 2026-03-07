@@ -253,7 +253,7 @@ export function ActionWizard({
                                 </div>
                             )}
 
-                        {(currentAction?.startsWith("GOL") || ["PARADA", "FUERA", "FALLO 7M"].includes(currentAction || "")) && (
+                        {activePlayer?.team === "B" && (currentAction?.startsWith("GOL") || ["PARADA", "FUERA", "FALLO 7M"].includes(currentAction || "")) && (
                             <div className={`${subPanelBg} p-2.5 sm:p-3 rounded-2xl border flex flex-col items-center transition-colors duration-500`}>
                                 <div className={`text-[10px] font-black mb-3 uppercase tracking-[0.2em] ${labelText}`}>
                                     Definición {currentAction === "FUERA" ? "(Fallo)" : ""}

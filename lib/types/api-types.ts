@@ -64,6 +64,8 @@ export interface Event {
     defense_at_moment?: DefenseType | null;
     context?: string[] | null;
     rival_goalkeeper?: number | null;
+    turnover_type?: string | null;
+    recovery_type?: string | null;
     created_at?: string;
 }
 
@@ -98,4 +100,17 @@ export interface CreateEventRequest {
     defense_at_moment?: DefenseType | null;
     context?: string[] | null;
     rival_goalkeeper?: number | null;
+    turnover_type?: string | null;
+    recovery_type?: string | null;
+}
+
+export interface UpdateEventRequest {
+    action?: ActionType;
+    context?: string[] | null;
+    court_zone?: CourtZone | null;
+    goal_zone?: number | null;
+    defense_at_moment?: DefenseType | null;
+    rival_goalkeeper?: number | null;
+    turnover_type?: string | null;
+    recovery_type?: string | null;
 }

@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { eventsApi } from '@/lib/api/events';
-import { CreateEventRequest } from '@/lib/types/api-types';
+import { CreateEventRequest, UpdateEventRequest } from '@/lib/types/api-types';
 import { matchKeys } from './useMatch';
 import { statisticsKeys } from './useStatistics';
 
@@ -41,6 +41,37 @@ export function useUndoLastEvent(matchId: string) {
 
     return useMutation({
         mutationFn: () => eventsApi.undoLast(matchId),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: eventKeys.byMatch(matchId) });
+            queryClient.invalidateQueries({ queryKey: statisticsKeys.match(matchId) });
+            queryClient.invalidateQueries({ queryKey: statisticsKeys.goalkeepers(matchId) });
+            queryClient.invalidateQueries({ queryKey: statisticsKeys.heatmap(matchId) });
+            queryClient.invalidateQueries({ queryKey: matchKeys.detail(matchId) });
+        },
+    });
+}
+
+export function useDeleteEvent(matchId: string) {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: (eventId: string) => eventsApi.deleteById(eventId),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: eventKeys.byMatch(matchId) });
+            queryClient.invalidateQueries({ queryKey: statisticsKeys.match(matchId) });
+            queryClient.invalidateQueries({ queryKey: statisticsKeys.goalkeepers(matchId) });
+            queryClient.invalidateQueries({ queryKey: statisticsKeys.heatmap(matchId) });
+            queryClient.invalidateQueries({ queryKey: matchKeys.detail(matchId) });
+        },
+    });
+}
+
+export function useUpdateEvent(matchId: string) {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: ({ eventId, data }: { eventId: string; data: UpdateEventRequest }) =>
+            eventsApi.update(eventId, data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: eventKeys.byMatch(matchId) });
             queryClient.invalidateQueries({ queryKey: statisticsKeys.match(matchId) });

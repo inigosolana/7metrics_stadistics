@@ -31,7 +31,7 @@ export function StatsTable({
             turnovers: events.filter((e) => e.team === team && e.action === "PÉRDIDA").length,
             possessions: events.filter((e) => e.team === team && (
                 e.action.startsWith("GOL") || e.action === "PARADA" || e.action === "FUERA" ||
-                e.action === "POSTE" || e.action === "PÉRDIDA" || e.action === "FALLO 7M"
+                e.action === "POSTE" || e.action === "BLOCADO" || e.action === "PÉRDIDA" || e.action === "FALLO 7M"
             )).length,
             recoveries: events.filter((e) => e.team === team && e.action === "RECUPERACIÓN").length,
             goals7m: events.filter((e) => e.team === team && e.action === "GOL 7M").length,
@@ -94,26 +94,29 @@ export function StatsTable({
     const totalSavesB = gkStatsB.reduce((sum, gk) => sum + gk.saves, 0)
     const gkEffB = totalShotsB > 0 ? Math.round((totalSavesB / totalShotsB) * 100) : 0
 
+    const gridCols = "grid-cols-[1fr_1fr_1fr]"
+
     const StatRow = ({ label, valA, valB, highlight = false }: any) => (
-        <div className={`flex items-center text-xs py-2 border-b transition-colors duration-200 ${isNightMode ? 'border-white/5 hover:bg-white/5' : 'border-slate-200 hover:bg-slate-50'} ${highlight ? (isNightMode ? 'bg-white/5 font-black' : 'bg-slate-100/80 font-black') : ''}`}>
-            <div className={`flex-1 text-center ${highlight ? "text-blue-500" : (isNightMode ? "text-slate-300" : "text-slate-700")}`}>{valA}</div>
-            <div className={`w-36 text-center text-[10px] font-black uppercase tracking-wider ${isNightMode ? 'text-slate-500' : 'text-slate-400'}`}>{label}</div>
-            <div className={`flex-1 text-center ${highlight ? "text-amber-500" : (isNightMode ? "text-slate-300" : "text-slate-700")}`}>{valB}</div>
+        <div className={`grid ${gridCols} items-center text-xs py-2 px-3 border-b last:border-b-0 transition-colors ${isNightMode ? 'border-white/5 hover:bg-white/5' : 'border-slate-200 hover:bg-slate-50'} ${highlight ? (isNightMode ? 'bg-white/5 font-black' : 'bg-slate-100/80 font-black') : ''}`}>
+            <div className={`text-center min-w-0 ${highlight ? "text-blue-500" : (isNightMode ? "text-slate-300" : "text-slate-700")}`}>{valA}</div>
+            <div className={`text-[10px] font-bold uppercase tracking-wider text-center min-w-0 ${isNightMode ? 'text-slate-500' : 'text-slate-500'}`}>{label}</div>
+            <div className={`text-center min-w-0 ${highlight ? "text-amber-500" : (isNightMode ? "text-slate-300" : "text-slate-700")}`}>{valB}</div>
         </div>
     )
 
     return (
-        <div className={`rounded-2xl overflow-hidden flex flex-col h-full shadow-2xl border transition-all duration-500 ${isNightMode ? 'bg-slate-950/90 border-white/5 text-slate-100' : 'bg-white/90 border-slate-200 text-slate-900'}`}>
-            <div className={`text-center py-2.5 font-black uppercase tracking-[0.3em] text-[10px] ${isNightMode ? 'bg-blue-600/20 text-blue-400' : 'bg-blue-500 text-white'}`}>
+        <div className={`rounded-2xl overflow-hidden flex flex-col w-full shadow-2xl border transition-all duration-500 ${isNightMode ? 'bg-slate-950/90 border-white/5 text-slate-100' : 'bg-white/90 border-slate-200 text-slate-900'}`}>
+            <div className={`text-center py-2.5 font-black uppercase tracking-[0.3em] text-[10px] shrink-0 ${isNightMode ? 'bg-blue-600/20 text-blue-400' : 'bg-blue-500 text-white'}`}>
                 Estadísticas Globales
             </div>
 
-            <div className={`flex border-b font-black text-[10px] py-2 uppercase tracking-widest ${isNightMode ? 'border-white/5 bg-black/40' : 'border-slate-200 bg-slate-50'}`}>
-                <div className="flex-1 text-center text-blue-500 truncate px-2">{teamAName}</div>
-                <div className="flex-1 text-center text-amber-500 truncate px-2">{teamBName}</div>
+            <div className={`grid ${gridCols} items-center border-b font-bold text-[10px] py-2 px-3 uppercase tracking-wider shrink-0 ${isNightMode ? 'border-white/5 bg-black/40' : 'border-slate-200 bg-slate-50'}`}>
+                <div className="text-center text-blue-500 truncate min-w-0">{teamAName}</div>
+                <div className="text-center min-w-0" />
+                <div className="text-center text-amber-500 truncate min-w-0">{teamBName}</div>
             </div>
 
-            <div className="flex-1 flex flex-col overflow-y-auto custom-scrollbar">
+            <div className="flex-grow-0 flex flex-col overflow-y-auto custom-scrollbar min-h-0 max-h-[50vh]">
                 <StatRow label="Eficacia" valA={`${effA}%`} valB={`${effB}%`} highlight />
                 <StatRow label="Portería" valA={`${gkEffA}%`} valB={`${gkEffB}%`} highlight />
 
@@ -121,7 +124,7 @@ export function StatsTable({
                     <div className={`${isNightMode ? 'bg-blue-900/10' : 'bg-blue-50/50'}`}>
                         <div className="text-[9px] font-black text-blue-500 px-3 pt-3 pb-1 uppercase tracking-widest">PORTEROS LOCAL</div>
                         {gkStatsA.map(gk => (
-                            <div key={`gkA-${gk.number}`} className="flex items-center text-[10px] py-1.5 px-3 border-b border-white/5">
+                            <div key={`gkA-${gk.number}`} className={`flex items-center text-[10px] py-1.5 px-3 border-b ${isNightMode ? 'border-white/5' : 'border-slate-200/50'}`}>
                                 <div className="flex-1 text-left font-bold"><span className="text-blue-500">#{gk.number}</span> {gk.name}</div>
                                 <div className={`flex gap-3 text-[10px] ${isNightMode ? 'text-slate-500' : 'text-slate-400'}`}>
                                     <span>{gk.saves}/{gk.totalShots} <span className="font-black text-blue-500 ml-1">{gk.savePercentage}%</span></span>
@@ -135,7 +138,7 @@ export function StatsTable({
                     <div className={`${isNightMode ? 'bg-amber-900/10' : 'bg-amber-50/50'}`}>
                         <div className="text-[9px] font-black text-amber-500 px-3 pt-3 pb-1 uppercase tracking-widest">PORTERAS RIVAL</div>
                         {gkStatsB.map(gk => (
-                            <div key={`gkB-${gk.number}`} className="flex items-center text-[10px] py-1.5 px-3 border-b border-white/5">
+                            <div key={`gkB-${gk.number}`} className={`flex items-center text-[10px] py-1.5 px-3 border-b ${isNightMode ? 'border-white/5' : 'border-slate-200/50'}`}>
                                 <div className="flex-1 text-left font-bold"><span className="text-amber-500">#{gk.number}</span> {gk.name}</div>
                                 <div className={`flex gap-3 text-[10px] ${isNightMode ? 'text-slate-500' : 'text-slate-400'}`}>
                                     <span>{gk.saves}/{gk.totalShots} <span className="font-black text-amber-500 ml-1">{gk.savePercentage}%</span></span>
@@ -146,9 +149,6 @@ export function StatsTable({
                 )}
 
                 <StatRow label="Posesiones" valA={stats.A.possessions} valB={stats.B.possessions} />
-
-                <div className={`mt-2 border-t ${isNightMode ? 'border-white/5' : 'border-slate-100'}`}></div>
-
                 <StatRow label="Pérdidas" valA={stats.A.turnovers} valB={stats.B.turnovers} />
                 <StatRow label="Recuperaciones" valA={stats.A.recoveries} valB={stats.B.recoveries} />
                 <StatRow label="Goles 7m" valA={stats.A.goals7m} valB={stats.B.goals7m} />
