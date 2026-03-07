@@ -68,7 +68,7 @@ export const GoalAdvanced = ({ events, isNightMode = false }: GoalProps) => {
                 <div className={`absolute bottom-0 w-[80%] h-6 blur-2xl rounded-full ${isNightMode ? 'bg-blue-900/20' : 'bg-blue-500/10'}`}></div>
 
                 <div className="relative aspect-[3/2] w-full h-full max-h-[170px] sm:max-h-[220px] max-w-[450px] flex flex-col pt-[8px] sm:pt-[12px] px-[8px] sm:px-[12px] bg-[repeating-linear-gradient(45deg,#dc2626_0,#dc2626_20px,#f8fafc_20px,#f8fafc_40px)] rounded-t-xl shadow-2xl border-t border-x border-white/20">
-                    <div
+                        <div
                         className={`flex-1 w-full rounded-t-lg relative overflow-hidden shadow-[inset_0_10px_40px_rgba(0,0,0,0.5)] ${isNightMode ? 'bg-slate-900' : 'bg-slate-800'}`}
                         style={{
                             backgroundImage: "repeating-linear-gradient(0deg, transparent, transparent 19px, rgba(255,255,255,0.05) 19px, rgba(255,255,255,0.08) 20px), repeating-linear-gradient(90deg, transparent, transparent 19px, rgba(255,255,255,0.05) 19px, rgba(255,255,255,0.08) 20px)"

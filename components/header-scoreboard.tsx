@@ -31,23 +31,23 @@ export function HeaderScoreboard({
     formatTime,
 }: HeaderScoreboardProps) {
     return (
-        <div className={`backdrop-blur-xl border-b px-3 sm:px-5 lg:px-6 py-2 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 sm:gap-3 shadow-[0_4px_30px_rgba(0,0,0,0.5)] shrink-0 z-30 relative box-border h-auto sm:min-h-[92px] ${isNightMode ? 'bg-[#000000]/80 border-slate-900' : 'bg-slate-900/50 border-white/10'}`}>
+        <div className={`backdrop-blur-xl border-b px-2 sm:px-4 lg:px-6 py-2 grid grid-cols-[1fr_auto_1fr] items-center gap-2 sm:gap-4 shadow-[0_4px_30px_rgba(0,0,0,0.5)] shrink-0 z-30 relative box-border h-auto sm:min-h-[100px] ${isNightMode ? 'bg-[#000000]/80 border-slate-900' : 'bg-slate-900/50 border-white/10'}`}>
             {/* Equipo Local (A) - Izquierda */}
-            <div className="flex flex-col items-start min-w-0 sm:min-w-[140px] w-full sm:w-auto sm:h-full sm:justify-between">
+            <div className="flex flex-col items-start min-w-0 w-full sm:h-full sm:justify-center sm:gap-2">
                 <div className="flex items-center gap-2">
                     <span className="text-[10px] text-blue-400 font-black tracking-widest uppercase drop-shadow-[0_0_5px_rgba(96,165,250,0.5)]">LOCAL (A)</span>
                 </div>
-                <div className="grid grid-cols-[auto_minmax(0,1fr)] items-end gap-2 sm:gap-3 min-w-0 w-full">
-                    <span className="text-3xl sm:text-4xl font-black font-mono text-white leading-[0.9] tabular-nums drop-shadow-md min-w-[1.4ch] text-center">
+                <div className="flex items-center gap-2 sm:gap-3 min-w-0 w-full">
+                    <span className={`text-2xl sm:text-4xl font-black font-mono text-white leading-none tabular-nums drop-shadow-md min-w-[1.2ch] sm:min-w-[1.4ch] text-center`}>
                         {localScore}
                     </span>
-                    <span className="text-xs sm:text-sm font-bold text-slate-300 truncate max-w-[120px] sm:max-w-[160px] pb-0.5">{teamAName}</span>
+                    <span className={`text-[10px] sm:text-sm font-bold text-slate-300 truncate flex-1`}>{teamAName}</span>
                 </div>
             </div>
 
             {/* Cronómetro Central */}
-            <div className="flex flex-col items-center justify-center pointer-events-auto h-full px-1 sm:px-3 w-auto justify-self-center">
-                <div className={`backdrop-blur-md px-4 sm:px-6 py-1.5 rounded-2xl shadow-[0_5px_15px_rgba(0,0,0,0.4)] flex flex-col items-center justify-center h-full max-h-[56px] sm:max-h-[60px] ${isNightMode ? 'bg-black border-slate-900' : 'bg-slate-950/80 border-white/10'}`}>
+            <div className="flex flex-col items-center justify-center pointer-events-auto h-full px-1 sm:px-2 w-auto justify-self-center">
+                <div className={`backdrop-blur-md px-3 sm:px-6 py-1.5 rounded-2xl shadow-[0_5px_15px_rgba(0,0,0,0.4)] flex flex-col items-center justify-center h-full max-h-[52px] sm:max-h-[64px] ${isNightMode ? 'bg-black border-slate-900' : 'bg-slate-950/80 border-white/10'}`}>
                     <span className="font-mono text-2xl sm:text-4xl font-black text-white tracking-widest tabular-nums drop-shadow-[0_0_15px_rgba(255,255,255,0.4)] block leading-none">
                         {formatTime(time)}
                     </span>
@@ -70,7 +70,7 @@ export function HeaderScoreboard({
                         </Button>
                     </div>
                 </div>
-                <div className="flex flex-wrap items-center justify-center gap-1 sm:gap-2 no-print mt-2 w-full">
+                <div className="flex flex-wrap items-center justify-center gap-1 sm:gap-1.5 no-print mt-2 w-full max-w-[280px] sm:max-w-none">
                     <Button
                         onClick={onToggleTheme}
                         className={`h-7 w-7 sm:h-8 sm:w-8 p-0 rounded-lg backdrop-blur-md shadow-sm border ${isNightMode ? 'bg-indigo-600/20 text-indigo-400 border-indigo-900/50 hover:bg-indigo-600/40' : 'bg-slate-700/50 text-amber-300 border-slate-600 hover:bg-slate-700'}`}
@@ -107,15 +107,15 @@ export function HeaderScoreboard({
             </div>
 
             {/* Equipo Visitante (B) - Derecha */}
-            <div className="flex flex-col items-end min-w-0 sm:min-w-[140px] w-full sm:w-auto sm:h-full sm:justify-between">
-                <div className="flex flex-wrap items-center gap-2 flex-row-reverse justify-between sm:justify-end w-full">
+            <div className="flex flex-col items-end min-w-0 w-full sm:h-full sm:justify-center sm:gap-2">
+                <div className="flex items-center gap-2 flex-row-reverse w-full">
                     <span className="text-[10px] text-amber-400 font-black tracking-widest uppercase drop-shadow-[0_0_5px_rgba(251,191,36,0.5)]">VISITANTE (B)</span>
                 </div>
-                <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-2 sm:gap-3 min-w-0 w-full">
-                    <span className="text-xs sm:text-sm font-bold text-slate-300 truncate max-w-[120px] sm:max-w-[160px] pb-0.5 text-right justify-self-end">{teamBName}</span>
-                    <span className="text-3xl sm:text-4xl font-black font-mono text-white leading-[0.9] tabular-nums drop-shadow-md min-w-[1.4ch] text-center">
+                <div className="flex items-center gap-2 sm:gap-3 flex-row-reverse min-w-0 w-full">
+                    <span className={`text-2xl sm:text-4xl font-black font-mono text-white leading-none tabular-nums drop-shadow-md min-w-[1.2ch] sm:min-w-[1.4ch] text-center`}>
                         {visitorScore}
                     </span>
+                    <span className={`text-[10px] sm:text-sm font-bold text-slate-300 truncate flex-1 text-right`}>{teamBName}</span>
                 </div>
             </div>
         </div>
