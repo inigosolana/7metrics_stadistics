@@ -9,6 +9,7 @@ export const HANDS = ["Diestro", "Zurdo"]
 export const TURNOVER_TYPES = [
     "Pasos",
     "Dobles",
+    "Error de pase",
     "Falta en ataque",
     "Pase y va",
     "Recepción fallida",

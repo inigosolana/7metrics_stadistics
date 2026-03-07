@@ -290,6 +290,7 @@ export default function MatchView() {
               handlePlayerSelect={handlePlayerSelect}
               activeGoalkeeper={activeGoalkeeperA}
               setActiveGoalkeeper={setActiveGoalkeeperA}
+              events={events}
               isNightMode={isNightMode}
             />
           </div>
@@ -303,6 +304,7 @@ export default function MatchView() {
               handlePlayerSelect={handlePlayerSelect}
               activeGoalkeeper={activeGoalkeeperB}
               setActiveGoalkeeper={setActiveGoalkeeperB}
+              events={events}
               isNightMode={isNightMode}
             />
           </div>

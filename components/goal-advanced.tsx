@@ -14,7 +14,7 @@ export const GoalAdvanced = ({ events, isNightMode = false }: GoalProps) => {
 
     const relevantShots = useMemo(() => {
         return events.filter((e: Event) => {
-            // Asumimos que Team B tira a la portera local (Team A)
+            // Asumimos que Team B tira a la portero local (Team A)
             if (e.team !== "B") return false
             if (!e.goal_zone) return false
 

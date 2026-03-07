@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, Shield, AlertTriangle, Filter, CheckCircle2 } from "lucide-react"
+import { ArrowLeft, Shield, AlertTriangle, Filter, CheckCircle2, MousePointerClick } from "lucide-react"
 import { DEFENSE_TYPES, COURT_ZONES, GOAL_ZONES, TURNOVER_TYPES, RECOVERY_TYPES } from "@/lib/constants"
 import { Player, DefenseType, CourtZone } from "@/lib/types/api-types"
 
@@ -71,6 +71,24 @@ export function ActionWizard({
     const labelText = isNightMode ? "text-slate-500" : "text-slate-400"
     const headingText = isNightMode ? "text-white" : "text-slate-900"
 
+    if (wizardState === "IDLE") {
+        return (
+            <div className={`${glassBg} backdrop-blur-2xl border rounded-2xl p-4 h-full flex flex-col items-center justify-center relative overflow-hidden shadow-2xl transition-all duration-500 min-h-0 gap-3`}>
+                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${isNightMode ? 'bg-white/5 border border-white/10' : 'bg-slate-100 border border-slate-200'}`}>
+                    <MousePointerClick className={`w-7 h-7 ${isNightMode ? 'text-slate-500' : 'text-slate-400'}`} />
+                </div>
+                <div className="text-center">
+                    <p className={`text-sm font-black uppercase tracking-widest ${isNightMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                        Selecciona un jugador
+                    </p>
+                    <p className={`text-[10px] mt-1 ${isNightMode ? 'text-slate-600' : 'text-slate-400'}`}>
+                        Toca cualquier jugador para registrar una acción
+                    </p>
+                </div>
+            </div>
+        )
+    }
+
     return (
         <div className={`${glassBg} backdrop-blur-2xl border rounded-2xl p-3 sm:p-4 h-full flex flex-col relative overflow-hidden shadow-2xl transition-all duration-500 min-h-0`}>
             {/* Header */}
@@ -91,7 +109,7 @@ export function ActionWizard({
                     <span className={`text-[9px] uppercase font-black ${labelText} tracking-wider`}>{activePlayer?.isGK ? "PORTERO" : "JUGADOR"}</span>
                     <span className={`font-black text-base sm:text-xl leading-none ${headingText} flex items-center gap-1.5 sm:gap-2`}>
                         <span className="text-blue-500">#{activePlayer?.player}</span>
-                        <span className="whitespace-nowrap">{activePlayer?.name || "Sin Nombre"}</span>
+                        <span className="whitespace-nowrap">{activePlayer?.name || ""}</span>
                     </span>
                 </div>
             </div>
@@ -126,13 +144,13 @@ export function ActionWizard({
                                 FALLO 7m
                             </Button>
                             <Button
-                                className="h-11 sm:h-14 text-[11px] sm:text-sm font-black bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 text-blue-600 rounded-xl transition-all shadow-sm"
+                                className="h-11 sm:h-14 text-[11px] sm:text-sm font-bold bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 text-blue-600 rounded-xl transition-all shadow-sm"
                                 onClick={() => handleActionSelect("PARADA")}
                             >
-                                PARADA PORTERA
+                                PARADA PORTERO
                             </Button>
                             <Button
-                                className="h-11 sm:h-14 text-[11px] sm:text-sm font-black bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 text-amber-600 rounded-xl transition-all shadow-sm"
+                                className="h-11 sm:h-14 text-[11px] sm:text-sm font-bold bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 text-amber-600 rounded-xl transition-all shadow-sm"
                                 onClick={() => handleActionSelect("FUERA")}
                             >
                                 FUERA / POSTE
@@ -149,13 +167,6 @@ export function ActionWizard({
                             >
                                 RECUPERACIÓN DE BALÓN
                             </Button>
-                            <Button
-                                variant="outline"
-                                className={`h-10 sm:h-12 text-[11px] sm:text-xs border col-span-2 rounded-xl transition-all shadow-sm ${isNightMode ? 'border-white/10 bg-white/5 text-slate-300' : 'border-slate-200 bg-slate-50 text-slate-500'}`}
-                                onClick={() => handleActionSelect("ASISTENCIA")}
-                            >
-                                Asistencia / Otro
-                            </Button>
                         </>
                     ) : (
                         <>
@@ -166,7 +177,7 @@ export function ActionWizard({
                                 GOL CAMPO A CAMPO
                             </Button>
                             <Button
-                                className="h-14 sm:h-20 text-base sm:text-xl font-black bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 text-amber-600 rounded-xl transition-all shadow-sm"
+                                className="h-14 sm:h-20 text-base sm:text-xl font-bold bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 text-amber-600 rounded-xl transition-all shadow-sm"
                                 onClick={() => handleActionSelect("FUERA")}
                             >
                                 FUERA / POSTE
@@ -195,7 +206,7 @@ export function ActionWizard({
                             rivalGoalkeepers.length > 0 && (
                                 <div className={`${subPanelBg} p-3 rounded-2xl border transition-colors duration-500`}>
                                     <div className={`text-[10px] font-black mb-2 uppercase tracking-[0.2em] flex items-center justify-between ${labelText}`}>
-                                        <span className="flex items-center gap-2"><Shield className="w-3.5 h-3.5" /> Portera Rival</span>
+                                        <span className="flex items-center gap-2"><Shield className="w-3.5 h-3.5" /> Portero Rival</span>
                                     </div>
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                         {rivalGoalkeepers.map((gk: any) => {
@@ -231,7 +242,7 @@ export function ActionWizard({
                                                         className={`w-10 sm:w-12 h-full rounded-none border-l transition-all ${isNightMode ? 'border-white/5' : 'border-slate-200'} ${isActive
                                                             ? (isNightMode ? "bg-green-600/20 text-green-400" : "bg-green-50 text-green-600")
                                                             : (isNightMode ? "bg-black/20 text-slate-600 hover:text-slate-300" : "bg-slate-50/50 text-slate-300 hover:text-slate-600")}`}
-                                                        title={isActive ? "Portera actual" : "Marcar como portera principal"}
+                                                        title={isActive ? "Portero actual" : "Marcar como portero principal"}
                                                     >
                                                         <Shield className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${isActive ? "fill-current" : ""}`} />
                                                     </Button>
