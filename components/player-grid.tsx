@@ -75,7 +75,7 @@ export function PlayerGrid({
                         <div key={player.id || player.number} className="flex items-stretch gap-1.5 sm:gap-2">
                             <Button
                                 variant="outline"
-                                className={`flex-1 min-h-[44px] sm:min-h-[55px] h-full flex items-center justify-start px-2.5 sm:px-4 rounded-xl border relative transition-all duration-200 active:scale-95 shadow-md overflow-hidden ${isSelected ? selectedStyle : unselectedStyle} ${isActiveGK && !isSelected ? "ring-2 ring-green-500/30" : ""}`}
+                                className={`flex-1 min-h-[44px] sm:min-h-[55px] h-full flex items-center justify-start px-2.5 sm:px-4 rounded-xl border relative transition-all duration-200 active:scale-95 shadow-md overflow-hidden ${isSelected ? selectedStyle : unselectedStyle} ${isActiveGK && !isSelected ? "border border-green-500" : ""}`}
                                 onClick={() => handlePlayerSelect(team, player.number)}
                             >
                                 <span className={`text-lg sm:text-2xl font-black leading-none italic shrink-0 w-7 sm:w-10 text-left ${isSelected ? "text-white" : (isTeamA ? "text-blue-500/40" : "text-amber-500/40")}`}>
@@ -154,7 +154,7 @@ export function PlayerGrid({
                                     variant="ghost"
                                     onClick={() => setActiveGoalkeeper(isActiveGK ? null : player.number)}
                                     className={`shrink-0 w-9 sm:w-12 h-full rounded-xl border transition-all ${isActiveGK
-                                        ? "bg-green-500 border-green-400 text-white shadow-lg"
+                                        ? "bg-green-500 border border-green-500 text-white"
                                         : (isNightMode ? "bg-black/40 border-white/5 text-slate-600" : "bg-white border-slate-200 text-slate-300")
                                         }`}
                                     title={isActiveGK ? "Portero en campo" : "Marcar como portero en campo"}
