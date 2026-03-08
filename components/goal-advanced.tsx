@@ -6,16 +6,17 @@ import { Shield, Target } from "lucide-react"
 
 interface GoalProps {
     readonly events: Event[]
+    readonly myTeam?: "A" | "B"
     readonly isNightMode?: boolean
 }
 
-export const GoalAdvanced = ({ events, isNightMode = false }: GoalProps) => {
+export const GoalAdvanced = ({ events, myTeam = "B", isNightMode = false }: GoalProps) => {
     const [filter, setFilter] = useState<"ALL" | "WING" | "7M">("ALL")
 
     const relevantShots = useMemo(() => {
         return events.filter((e: Event) => {
-            // Asumimos que Team B tira a la portero local (Team A)
-            if (e.team !== "B") return false
+            // Solo lanzamientos del equipo rival (el que ataca la portería propia)
+            if (e.team === myTeam) return false
             if (!e.goal_zone) return false
 
             const isShot = ["GOL", "GOL 7M", "FALLO 7M", "BLOCADO", "FUERA", "PARADA"].some(

@@ -30,6 +30,7 @@ interface ActionWizardProps {
     readonly setSelectedGoalkeeper: (n: number) => void
     readonly activeRivalGoalkeeper: number | null
     readonly onSetActiveRivalGK: (n: number) => void
+    readonly myTeam?: "A" | "B"
     readonly isNightMode?: boolean
 }
 
@@ -58,6 +59,7 @@ export function ActionWizard({
     setSelectedGoalkeeper,
     activeRivalGoalkeeper,
     onSetActiveRivalGK,
+    myTeam = "B",
     isNightMode = false,
 }: ActionWizardProps) {
     const glassBg = isNightMode
@@ -253,7 +255,8 @@ export function ActionWizard({
                                 </div>
                             )}
 
-                        {activePlayer?.team === "B" && (currentAction?.startsWith("GOL") || ["PARADA", "FUERA", "FALLO 7M"].includes(currentAction || "")) && (
+                        {((activePlayer?.team !== myTeam && (currentAction?.startsWith("GOL") || ["FUERA", "FALLO 7M"].includes(currentAction || ""))) ||
+                            (activePlayer?.team === myTeam && currentAction === "PARADA")) && (
                             <div className={`${subPanelBg} p-2.5 sm:p-3 rounded-2xl border flex flex-col items-center transition-colors duration-500`}>
                                 <div className={`text-[10px] font-black mb-3 uppercase tracking-[0.2em] ${labelText}`}>
                                     Definición {currentAction === "FUERA" ? "(Fallo)" : ""}
@@ -397,13 +400,13 @@ export function ActionWizard({
                         )}
                     </div>
 
-                    <div className={`pt-4 border-t mt-auto shrink-0 transition-colors duration-500 ${isNightMode ? 'border-white/10' : 'border-slate-200'}`}>
+                    <div className={`pt-4 border-t mt-auto shrink-0 transition-colors duration-500 flex justify-end ${isNightMode ? 'border-white/10' : 'border-slate-200'}`}>
                         <Button
-                            size="lg"
-                            className="w-full h-12 sm:h-16 bg-blue-600 hover:bg-blue-500 text-white shadow-xl font-black tracking-[0.18em] sm:tracking-[0.3em] text-sm sm:text-xl uppercase rounded-2xl transition-all active:scale-[0.98] border border-blue-400/50"
+                            size="sm"
+                            className="h-10 px-6 bg-blue-600 hover:bg-blue-500 text-white shadow-lg font-black tracking-[0.15em] text-xs uppercase rounded-xl transition-all active:scale-[0.98] border border-blue-400/50"
                             onClick={() => confirmEvent()}
                         >
-                            CONFIRMAR <CheckCircle2 className="w-4 h-4 sm:w-6 sm:h-6 ml-2 sm:ml-3" />
+                            Confirmar <CheckCircle2 className="w-3.5 h-3.5 ml-1.5" />
                         </Button>
                     </div>
                 </div>

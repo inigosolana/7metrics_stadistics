@@ -23,11 +23,14 @@ export default function MatchView() {
   const [time, setTime] = useState(0)
   const [isRunning, setIsRunning] = useState(false)
   const [isNightMode, setIsNightMode] = useState(false)
+  const [myTeam, setMyTeam] = useState<"A" | "B">("B")
 
   // Persistencia básica de Match ID y tiempo
   useEffect(() => {
     const storedId = localStorage.getItem("currentMatchId")
+    const storedMyTeam = localStorage.getItem("myTeam") as "A" | "B" | null
     if (storedId) setMatchId(storedId)
+    if (storedMyTeam) setMyTeam(storedMyTeam)
   }, [])
 
   useEffect(() => {
@@ -126,10 +129,12 @@ export default function MatchView() {
   }
 
   // --- HANDLERS ---
-  const handleMatchStarted = (id: string, initialPossession: string) => {
+  const handleMatchStarted = (id: string, initialPossession: string, team: "A" | "B") => {
     setMatchId(id)
+    setMyTeam(team)
+    localStorage.setItem("myTeam", team)
     setTime(0)
-    setIsRunning(true) // Autostart timer when match created
+    setIsRunning(true)
   }
 
   const handlePlayerSelect = (team: "A" | "B", number: number) => {
@@ -178,6 +183,13 @@ export default function MatchView() {
   const handleActionSelect = (action: string) => {
     setCurrentAction(action)
     setWizardState("DETAILS")
+
+    // Pre-seleccionar "Igualdad" por defecto en goles
+    if (action?.startsWith("GOL")) {
+      setSelectedContext(["Igualdad"])
+    } else {
+      setSelectedContext([])
+    }
 
     // Pre-seleccionar defensa actual si la tenemos en el match state
     // Por simplicidad, tomamos la por defecto del match
@@ -236,6 +248,7 @@ export default function MatchView() {
 
   const handleResetMatch = () => {
     localStorage.removeItem("currentMatchId")
+    localStorage.removeItem("myTeam")
     if (matchId) {
       localStorage.removeItem(`activeGkA_${matchId}`)
       localStorage.removeItem(`activeGkB_${matchId}`)
@@ -342,7 +355,7 @@ export default function MatchView() {
               />
             </div>
             <div className="w-full md:flex-1 min-w-0 min-h-0 flex flex-col">
-              <GoalAdvanced events={events} isNightMode={isNightMode} />
+              <GoalAdvanced events={events} myTeam={myTeam} isNightMode={isNightMode} />
             </div>
           </div>
 
@@ -422,6 +435,7 @@ export default function MatchView() {
                   if (activeInfo?.team === "A") setActiveGoalkeeperB(n)
                   else setActiveGoalkeeperA(n)
                 }}
+                myTeam={myTeam}
                 isNightMode={isNightMode}
               />
             </SheetContent>

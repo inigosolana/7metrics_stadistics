@@ -240,7 +240,7 @@ const SetupTeamColumn = ({ team, name, setName, defense, setDefense, players, se
 // Main Component
 import { useCreatePlayersBulk as useCreateBulk } from "@/lib/hooks/usePlayers" // Import correcto
 
-export function MatchSetup({ onMatchStarted }: { onMatchStarted: (id: string, initialPossession: string) => void }) {
+export function MatchSetup({ onMatchStarted }: { onMatchStarted: (id: string, initialPossession: string, myTeam: "A" | "B") => void }) {
     const [teamAName, setTeamAName] = useState("Local A")
     const [teamBName, setTeamBName] = useState("Visitante B")
     const [defenseA, setDefenseA] = useState<DefenseType>("6:0")
@@ -264,6 +264,7 @@ export function MatchSetup({ onMatchStarted }: { onMatchStarted: (id: string, in
         })),
     )
     const [initialPossession, setInitialPossession] = useState<"A" | "B" | null>(null)
+    const [myTeam, setMyTeam] = useState<"A" | "B" | null>(null)
 
     // API Mutations
     const createMatch = useCreateMatch()
@@ -272,7 +273,7 @@ export function MatchSetup({ onMatchStarted }: { onMatchStarted: (id: string, in
     const [isSubmitting, setIsSubmitting] = useState(false)
 
     const handleStart = async () => {
-        if (!initialPossession) return
+        if (!initialPossession || !myTeam) return
         setIsSubmitting(true)
 
         try {
@@ -327,7 +328,7 @@ export function MatchSetup({ onMatchStarted }: { onMatchStarted: (id: string, in
 
             await startMatch.mutateAsync(matchId)
 
-            onMatchStarted(matchId, initialPossession)
+            onMatchStarted(matchId, initialPossession, myTeam!)
 
         } catch (e) {
             console.error("Error starting match", e)
@@ -364,7 +365,35 @@ export function MatchSetup({ onMatchStarted }: { onMatchStarted: (id: string, in
                 />
             </div>
 
+            {/* Selector: equipo propio */}
             <div className="mt-4 sm:mt-6 bg-slate-900 p-4 sm:p-6 rounded-xl border border-slate-800">
+                <h2 className="text-sm sm:text-lg font-bold mb-3 sm:mb-4 uppercase tracking-wider sm:tracking-widest flex items-center gap-2">
+                    <Shield className="w-5 h-5 text-blue-400" /> ¿De qué equipo tomas estadísticas?
+                </h2>
+                <div className="flex flex-col sm:flex-row gap-3">
+                    <button
+                        type="button"
+                        onClick={() => setMyTeam("A")}
+                        className={`flex-1 py-3 px-4 rounded-xl border-2 font-black uppercase tracking-wider text-sm transition-all ${myTeam === "A"
+                            ? "border-blue-500 bg-blue-500/20 text-blue-300 shadow-[0_0_16px_rgba(59,130,246,0.3)]"
+                            : "border-slate-700 bg-slate-800/50 text-slate-400 hover:border-slate-600"}`}
+                    >
+                        {teamAName}
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setMyTeam("B")}
+                        className={`flex-1 py-3 px-4 rounded-xl border-2 font-black uppercase tracking-wider text-sm transition-all ${myTeam === "B"
+                            ? "border-amber-500 bg-amber-500/20 text-amber-300 shadow-[0_0_16px_rgba(245,158,11,0.3)]"
+                            : "border-slate-700 bg-slate-800/50 text-slate-400 hover:border-slate-600"}`}
+                    >
+                        {teamBName}
+                    </button>
+                </div>
+            </div>
+
+            {/* Selector: primera posesión */}
+            <div className="mt-3 sm:mt-4 bg-slate-900 p-4 sm:p-6 rounded-xl border border-slate-800">
                 <h2 className="text-sm sm:text-lg font-bold mb-3 sm:mb-4 uppercase tracking-wider sm:tracking-widest flex items-center gap-2">
                     <Trophy className="w-5 h-5" /> Sorteo Inicial - Primera Posesión
                 </h2>
@@ -389,7 +418,7 @@ export function MatchSetup({ onMatchStarted }: { onMatchStarted: (id: string, in
             <Button
                 size="lg"
                 onClick={handleStart}
-                disabled={!initialPossession || isSubmitting}
+                disabled={!initialPossession || !myTeam || isSubmitting}
                 className="mt-4 sm:mt-6 w-full bg-green-600 hover:bg-green-500 disabled:opacity-50 font-black tracking-wider sm:tracking-widest text-sm sm:text-xl py-3 sm:py-6 shadow-[0_0_20px_rgba(34,197,94,0.3)]"
             >
                 {isSubmitting ? "CREANDO..." : "COMENZAR PARTIDO"}
