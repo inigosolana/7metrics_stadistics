@@ -301,6 +301,7 @@ export default function MatchView() {
         isNightMode={isNightMode}
         onToggleTheme={() => setIsNightMode(!isNightMode)}
         setIsRunning={setIsRunning}
+        setTime={setTime}
         onExport={handleExport}
         onReset={handleResetMatch}
         formatTime={formatTime}

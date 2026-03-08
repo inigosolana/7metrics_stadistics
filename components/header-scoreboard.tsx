@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button"
-import { Printer, Download, Pause, Play, Moon, Sun } from "lucide-react"
+import { Printer, Download, Pause, Play, Moon, Sun, Check } from "lucide-react"
+import { useState } from "react"
 
 interface HeaderScoreboardProps {
     readonly localScore: number
@@ -11,6 +12,7 @@ interface HeaderScoreboardProps {
     readonly isNightMode: boolean
     readonly onToggleTheme: () => void
     readonly setIsRunning: (val: boolean) => void
+    readonly setTime: (val: number) => void
     readonly onExport: () => void
     readonly onReset: () => void
     readonly formatTime: (seconds: number) => string
@@ -26,10 +28,29 @@ export function HeaderScoreboard({
     isNightMode,
     onToggleTheme,
     setIsRunning,
+    setTime,
     onExport,
     onReset,
     formatTime,
 }: HeaderScoreboardProps) {
+    const [editingTime, setEditingTime] = useState(false)
+    const [editMin, setEditMin] = useState("0")
+    const [editSec, setEditSec] = useState("0")
+
+    const startEditing = () => {
+        if (isRunning) return
+        setEditMin(String(Math.floor(time / 60)))
+        setEditSec(String(time % 60))
+        setEditingTime(true)
+    }
+
+    const confirmEdit = () => {
+        const mins = Math.max(0, parseInt(editMin) || 0)
+        const secs = Math.max(0, Math.min(59, parseInt(editSec) || 0))
+        setTime(mins * 60 + secs)
+        setEditingTime(false)
+    }
+
     return (
         <div className={`backdrop-blur-xl border-b px-2 sm:px-4 lg:px-6 py-2 grid grid-cols-[1fr_auto_1fr] items-center gap-2 sm:gap-4 shadow-[0_4px_30px_rgba(0,0,0,0.5)] shrink-0 z-30 relative box-border h-auto sm:min-h-[100px] ${isNightMode ? 'bg-[#000000]/80 border-slate-900' : 'bg-slate-900/50 border-white/10'}`}>
             {/* Equipo Local (A) - Izquierda */}
@@ -46,16 +67,48 @@ export function HeaderScoreboard({
             </div>
 
             {/* Cronómetro Central */}
-            <div className="flex flex-col items-center justify-center pointer-events-auto h-full px-1 sm:px-2 w-auto justify-self-center">
-                <div className={`backdrop-blur-md px-3 sm:px-6 py-1.5 rounded-2xl shadow-[0_5px_15px_rgba(0,0,0,0.4)] flex flex-col items-center justify-center h-full max-h-[52px] sm:max-h-[64px] ${isNightMode ? 'bg-black border-slate-900' : 'bg-slate-950/80 border-white/10'}`}>
-                    <span className="font-mono text-2xl sm:text-4xl font-black text-white tracking-widest tabular-nums drop-shadow-[0_0_15px_rgba(255,255,255,0.4)] block leading-none">
-                        {formatTime(time)}
-                    </span>
+            <div className="flex flex-col items-center justify-center pointer-events-auto h-full px-1 sm:px-2 justify-self-center">
+                <div className={`backdrop-blur-md px-3 sm:px-6 py-1.5 rounded-2xl shadow-[0_5px_15px_rgba(0,0,0,0.4)] flex flex-col items-center justify-center h-full max-h-[52px] sm:max-h-[64px] ${isNightMode ? 'bg-black border-slate-900' : 'bg-slate-700/90 border-slate-600/50'}`}>
+                    {editingTime ? (
+                        <div className="flex items-center gap-1">
+                            <input
+                                type="number"
+                                min={0}
+                                value={editMin}
+                                onChange={e => setEditMin(e.target.value)}
+                                onKeyDown={e => e.key === "Enter" && confirmEdit()}
+                                className="w-10 sm:w-14 bg-transparent text-white font-mono text-2xl sm:text-4xl font-black text-center tabular-nums outline-none border-b border-white/40 focus:border-white leading-none"
+                                autoFocus
+                            />
+                            <span className="text-white font-black text-2xl sm:text-4xl leading-none">:</span>
+                            <input
+                                type="number"
+                                min={0}
+                                max={59}
+                                value={editSec}
+                                onChange={e => setEditSec(e.target.value)}
+                                onKeyDown={e => e.key === "Enter" && confirmEdit()}
+                                className="w-10 sm:w-14 bg-transparent text-white font-mono text-2xl sm:text-4xl font-black text-center tabular-nums outline-none border-b border-white/40 focus:border-white leading-none"
+                            />
+                            <button onClick={confirmEdit} className="ml-1 text-green-400 hover:text-green-300 transition-colors">
+                                <Check className="w-4 h-4 sm:w-5 sm:h-5" />
+                            </button>
+                        </div>
+                    ) : (
+                        <button
+                            onClick={startEditing}
+                            disabled={isRunning}
+                            className={`font-mono text-2xl sm:text-4xl font-black text-white tracking-widest tabular-nums drop-shadow-[0_0_15px_rgba(255,255,255,0.4)] block leading-none ${!isRunning ? "cursor-pointer hover:text-white/80" : "cursor-default"}`}
+                            title={!isRunning ? "Clic para ajustar el tiempo" : ""}
+                        >
+                            {formatTime(time)}
+                        </button>
+                    )}
                     <div className="flex justify-center mt-1">
                         <Button
                             size="sm"
                             variant="ghost"
-                            onClick={() => setIsRunning(!isRunning)}
+                            onClick={() => { setEditingTime(false); setIsRunning(!isRunning) }}
                             className={`h-5 sm:h-6 px-2 sm:px-3 text-[8px] sm:text-[9px] rounded-full uppercase tracking-widest font-black transition-all shadow-sm ${isRunning ? "text-red-400 bg-red-400/10 hover:bg-red-400/20 border border-red-500/20" : "text-green-400 bg-green-400/10 hover:bg-green-400/20 border border-green-500/20 shadow-[0_0_10px_rgba(74,222,128,0.2)]"}`}
                         >
                             {isRunning ? (
