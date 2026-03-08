@@ -30,8 +30,9 @@ export function PlayerGrid({
 }: PlayerGridProps) {
     const getPlayerStats = (playerNumber: number) => {
         const playerEvents = events.filter(e => e.team === team && e.player === playerNumber)
+        const rivalTeam = team === "A" ? "B" : "A"
         const goals = playerEvents.filter(e => e.action.startsWith("GOL")).length
-        const misses = playerEvents.filter(e => ["FALLO 7M", "FUERA"].includes(e.action)).length
+        const misses = playerEvents.filter(e => ["FALLO 7M", "FUERA", "POSTE", "BLOCADO", "PARADA"].includes(e.action)).length
         const turnovers = playerEvents.filter(e => e.action === "PÉRDIDA").length
         const saves = playerEvents.filter(e => e.action === "PARADA").length
         const recoveries = playerEvents.filter(e => e.action === "RECUPERACIÓN").length
@@ -106,7 +107,7 @@ export function PlayerGrid({
                                                     <span>⚽</span><span>{stats.goals}</span>
                                                 </span>
                                             )}
-                                            {stats.saves > 0 && (
+                                            {stats.saves > 0 && player.is_goalkeeper && (
                                                 <span className={`flex items-center gap-0.5 text-[10px] font-black px-1.5 py-0.5 rounded-md leading-none ${
                                                     isSelected
                                                         ? "bg-blue-300/30 text-blue-100 border border-blue-300/30"

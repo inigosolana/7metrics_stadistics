@@ -9,6 +9,7 @@ import { LiveFeedPanel } from "@/components/live-feed-panel"
 import { StatsTable } from "@/components/stats-table"
 import { ActionWizard, WizardState } from "@/components/action-wizard"
 import { Sheet, SheetContent } from "@/components/ui/sheet"
+import { BottomPanel } from "@/components/bottom-panel"
 import { useMatch } from "@/lib/hooks/useMatch"
 import { usePlayers } from "@/lib/hooks/usePlayers"
 import { useCreateEvent, useUndoLastEvent, useEventsByMatch, useDeleteEvent, useUpdateEvent } from "@/lib/hooks/useEvents"
@@ -359,33 +360,12 @@ export default function MatchView() {
             </div>
           </div>
 
-          {/* Bottom Area: idle placeholder */}
+          {/* Bottom Area: Panel de análisis */}
           <div className="flex-[2] min-h-0">
-            <ActionWizard
-              wizardState="IDLE"
-              activePlayer={null}
-              isGoalkeeper={false}
-              handleBack={() => {}}
-              currentAction={null}
-              handleActionSelect={() => {}}
-              selectedContext={[]}
-              toggleContext={() => {}}
-              confirmEvent={() => {}}
-              selectedCourtZone={null}
-              setSelectedCourtZone={() => {}}
-              selectedGoalZone={null}
-              setSelectedGoalZone={() => {}}
-              selectedDefense={null}
-              setSelectedDefense={() => {}}
-              selectedTurnoverType={null}
-              setSelectedTurnoverType={() => {}}
-              selectedRecoveryType={null}
-              setSelectedRecoveryType={() => {}}
-              rivalGoalkeepers={[]}
-              selectedGoalkeeper={null}
-              setSelectedGoalkeeper={() => {}}
-              activeRivalGoalkeeper={null}
-              onSetActiveRivalGK={() => {}}
+            <BottomPanel
+              events={events}
+              teamAName={match?.team_a_name || "Local"}
+              teamBName={match?.team_b_name || "Visitante"}
               isNightMode={isNightMode}
             />
           </div>

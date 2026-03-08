@@ -20,19 +20,21 @@ export function StatsTable({
 }: StatsTableProps) {
 
     const stats = useMemo(() => {
+        const rival = (team: "A" | "B") => (team === "A" ? "B" : "A")
         const calculate = (team: "A" | "B") => ({
             goals: events.filter((e) => e.team === team && e.action.startsWith("GOL")).length,
             shots: events.filter(
                 (e) =>
                     e.team === team &&
-                    (e.action.startsWith("GOL") || e.action === "PARADA" || e.action === "FUERA" || e.action === "POSTE"),
+                    (e.action.startsWith("GOL") || e.action === "PARADA" || e.action === "FUERA" || e.action === "POSTE" || e.action === "BLOCADO"),
             ).length,
             saves: events.filter((e) => e.team === team && e.action === "PARADA").length,
             turnovers: events.filter((e) => e.team === team && e.action === "PÉRDIDA").length,
-            possessions: events.filter((e) => e.team === team && (
-                e.action.startsWith("GOL") || e.action === "PARADA" || e.action === "FUERA" ||
-                e.action === "POSTE" || e.action === "BLOCADO" || e.action === "PÉRDIDA" || e.action === "FALLO 7M"
-            )).length,
+            possessions: events.filter((e) =>
+                (e.team === team && (e.action.startsWith("GOL") || e.action === "PARADA" || e.action === "FUERA" ||
+                    e.action === "POSTE" || e.action === "BLOCADO" || e.action === "PÉRDIDA" || e.action === "FALLO 7M")) ||
+                (e.team === rival(team) && e.action === "RECUPERACIÓN")
+            ).length,
             recoveries: events.filter((e) => e.team === team && e.action === "RECUPERACIÓN").length,
             goals7m: events.filter((e) => e.team === team && e.action === "GOL 7M").length,
             goalsSup: events.filter(
@@ -136,7 +138,7 @@ export function StatsTable({
 
                 {gkStatsB.length > 0 && (
                     <div className={`${isNightMode ? 'bg-amber-900/10' : 'bg-amber-50/50'}`}>
-                        <div className="text-[9px] font-black text-amber-500 px-3 pt-3 pb-1 uppercase tracking-widest">PORTERAS RIVAL</div>
+                        <div className="text-[9px] font-black text-amber-500 px-3 pt-3 pb-1 uppercase tracking-widest">PORTEROS RIVAL</div>
                         {gkStatsB.map(gk => (
                             <div key={`gkB-${gk.number}`} className={`flex items-center text-[10px] py-1.5 px-3 border-b ${isNightMode ? 'border-white/5' : 'border-slate-200/50'}`}>
                                 <div className="flex-1 text-left font-bold"><span className="text-amber-500">#{gk.number}</span> {gk.name}</div>
